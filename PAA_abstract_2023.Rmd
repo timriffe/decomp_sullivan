@@ -1,0 +1,256 @@
+---
+title: "Decomposing Sullivan expectancy, an indirect incidence-based approach"
+author: "Tim Riffe and Rustam Tursun-zade"
+date: "2023-09-21"
+output: pdf_document
+bibliography: references.bib  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Abstract
+\textbf{Background}: If you have a lifetable and prevalence of some health condition, you can calculate a health expectancy using Sullivan's formula, and there are decompositon methods available to decompose differences (Nusselder & Looman 2004, Shkonikov & Andreev 2017). But you still might not be satisfied because observed prevalence could be driven by mortality differences by health state, and the lifetable is a weighted average of the mortality by different health states, which is unobserved in this case. 
+
+\textbf{Objectives}: We aim to transform Sullivan inputs into state-specific lifetables consistent with a given mortality rate ratio, and to convert prevalence into incidence. These rates should be independent of one another. Then we propose a rates-based decomposition approach.
+
+\textbf{Methods}: This is premised on an algebraic transformation of mortality, prevalence, and a rate-ratio between states (which might come from the literature). We first derive the rates, then reframe the calculation of health expectancy in terms of these. The resulting expectancy is identical to the traditional Sullivan one. Then we decompose the reexpressed function.
+
+\textbf{Results}: If we're decomposing just health expectancy, the marginal health and mortality components sum to the same amounts as if were using previously proposed methods, but the age patterns are different. However, if we're decomposing either the unhealthy expectancy or overall life expectancy, this method gives cool new perspectives. Imagine, an Arriaga-style life expectancy decomposition with a health component and two mortality components.
+
+\textbf{Conclusions}: This method gives an indirect method to transform Sullivan-style inputs a simple multistate model with an irreversible health state, and then shows how to decompose expectancies in terms of these new parameters. This might seem hypothetical because we do not observe a mortality rate ratio, but we think even so it's more informative than previously proposed Sullivan decompositions.
+
+# Introduction
+
+Healthy life expectancy (HLE, also called healthy life years) is most often calculated and reported using the Sullivan method (@sullivan1971single), and often the resulting estimate is very close to what would be derived from a multistate model. It's only natural for a demographer to want to decompose a Sullivan-derived expectancies. Decomposition tells us what drives the differences, and has the potential to better guide efforts to improve health and longevity. Ideally, we would decompose differences derived from incidence-based multistate models, since transitions are the ultimate levers of change. The parameters of a Sullivan estimate are, are a single lifetable and overall prevalence of a health condition. Decomposition approaches that have thus far been proposed include the widely-used @nusselder2004decomposition approach, which frames mortality in terms of survival, and the modification proposed by @shkolnikov2017decomposition, which frames the mortality in terms of incidence. The later is meant to more appropriately assign mortality effects to ages, since mortality rates can be treated as independent between ages, whereas survival is not. Both of these approaches have a single mortality schedule, however, and both keep health in terms of prevalence rather than incidence (@luy2020life).
+
+If the prevalent health condition in question has any lethality penalty, then it's easy to see that a mortality envelope shared over health states must be the prevalence-weighted average of two state-specific mortality schedules, one relatively high, the other relatively low. Prevalence is also in part determined by mortality dynamics. A very lethal health characteristic will not usually have high prevalence, and so on. Since the Sullivan data inputs are in endogenous to one another, their use as decomposition parameters does not properly isolate the effects of health dynamics and mortality. There is not much we can directly do about this except try to find data that yields health transitions and state-specific mortality, but this is often simply not available. In this paper we propose an indirect transformation of Sullivan data inputs into incidence-based multistate transitions: two state-specific mortality schedules, and disease onset. This transformation is only possible for the case of irreversible health deterioration. Once the Sullivan data inputs are fully transformed like this, then you can calculate healthy life expectancy using a multistate approach (see e.g. @caswell2021healthy) and resulting decompositions should properly isolate health and morbidity components.
+
+There's just one catch: we need to assume a rate ratio between health states. That might not be so bad, as there is a huge literature reporting rate ratios of various health conditions. But results will naturally vary depending on the value chosen. In this paper we will also explore the trade-off between isolated but uncertain components versus endogenous components, as well as other limitations of this method.
+
+# Methods
+
+Let's define some variables
+\begin{description}
+ \item{a} will index age, we assume discrete single ages through, please pardon the following notation which might seem continuous.
+ \item{$m(a)$} observed all-cause aggregate mortality rates for age $a$. 
+ \item{$q(a)$} conditional mortality probabilities derived from the rates
+ \item{$l(a)$} lifetable survivorship
+ \item{$L(a)$} lifetable exposure
+ \item{$\pi(a)$} the prevalence of a health condition expressed as a probability
+ \item{$R(a)$} the mortality rate ratio between health states. In practice we may or may not have this by age. We assume this.
+ \item{$m^u(a)$and $m^h(a)$} the mortality rates of people with and without the health condition, respectively. We infer these.
+ \item{$p^{h\rightarrow u}(a)$} transition probabilities from good to poor health. We infer this using some other intermediate steps described later.
+\end{description}
+
+For brevity, and at loss of demographic precision, let's use the following trick to convert rates $m(a)$ to survival probabilities (from birth) $l(a)$:
+
+\begin{equation}
+l(a+1) = e^{-\sum_{x=0}^{a} m(x)}
+\end{equation}
+where age 0 is simply 1. When needed, we will then approximate $L(a)$ using linear interpolation:
+\begin{equation}
+L(a) = \frac{l(a)+l(a+1)}{2}
+\end{equation}
+Let's say that mortality $m(a)$ is the prevalence-weighted average of state-specific mortality rates that we don't observe:
+\begin{equation}
+m(a) = (1-\pi(a))m^h(a) + \pi(a)m^u(a)
+\end{equation}
+Let's say we can't see $m(a)^h$ ($m(a)^u$) directly, but we are comfortable importing a rate ratio $R$ for the condition from some other epidemiological study or population, such that:
+
+\begin{equation}
+m^u(a) = R(a)m^h(a)
+\end{equation}
+
+If you don't have the rate ratio $R$ by age, then you might use a constant $R$, and the rest will be the same. In this case we can re-express $m(a)^h$ in the above two equations in terms of $m(a)$, $\pi(a)$, and $R(a)$:
+
+\begin{equation}
+m^h(a) = \frac{m(a)}{1-\pi(a) + \pi(a)R}
+\end{equation}
+And now we have two health-specific mortality schedules that are consistent with observed mortality, prevalence, and an assumed rate ratio. Next we need to re-express prevalence in terms of transition probabilities from good to poor health.
+First, derive $l(a)$ per equation 1 or your favorite lifetable method, then split it into healthy and unhealthy parts using $\pi(a)$ in the usual way:
+\begin{equation}
+\begin{aligned}
+l^h(a) &= l(a) (1-\pi(a))\\
+l^u(a) &= l(a) \pi(a)
+\end{aligned}
+\end{equation}
+The change in $l^u(a)$ is a net change $n^u(a)$, where we can now account for the part due to mortality, and the remainder must be transitions into poor health. To back out deaths in poor health $d^u(a)$, you can either convert $m(a)^u$ to a probability $q^u(a)$ and multiply with $l^u(a)$, or convert $l^u(a)$ to lifetable exposure per equation (2), and multiply directly by the rates. The net change $n^u(a)$ plus the deaths $d^u(a)$ sum to the transitions into poor health $t^{h\rightarrow u}(a)$, and these can be converted to a transition probability $p^{h\rightarrow u}(a)$ by dividing out the healthy stock $l^h(a)$
+\begin{equation}
+\begin{aligned}
+n^u(a) &= l^u(a+1) - l^u(a)\\
+d^u(a) &= L^u(a) m^u(a)\\
+t^{h\rightarrow u}(a) &= n^u(a) + d^u(a)\\
+p^{h\rightarrow u}(a) &= \frac{t^{h\rightarrow u}(a) }{l^h(a)}
+\end{aligned}
+\end{equation}
+
+Now we have parameters necessary to calculate healthy life expectancy in terms of pure incidence, $m^h(a)$, $m^u(a)$, and $p^{h\rightarrow u}(a)$. We may also wish to specify an initial composition to the radix based on $\pi(0)$. Recall the purpose of doing this is to give us conceivably independent parameters, so as to properly isolate effects when we decompose. So our expectancy function needs to be based on just these new parameters. You can set things up using matrix algebra as described by @caswell2021healthy, or simply iterate up like so to derive $l^h(a)$ and $l^u(a)$. 
+
+You could do so additively like so
+\begin{equation}
+\begin{aligned}
+l^h(a+1) &= l^h(a) - d^h(a) - t^{h\rightarrow u}(a) \\
+l^u(a+1) &= l^u(a) - d^u(a) + t^{h\rightarrow u}(a)
+\end{aligned}
+\end{equation}
+Or multiplicatively like so
+\begin{equation}
+\begin{aligned}
+l^h(a+1) &= l^h(a)  \left(1 - q^h(a) - p^{h\rightarrow u}(a)\right) \\
+l^u(a+1) &= l^u(a)  \left(1 - q^u(a)\right) + l^h(a) p^{h\rightarrow u}(a)
+\end{aligned}
+\end{equation}
+
+Either way, the initial values are set by $\pi(0)$:
+\begin{equation}
+\begin{aligned}
+l^h(0) &= 1-\pi(0) \\
+l^u(0) &= \pi(0)
+\end{aligned}
+\end{equation}
+
+Now we are ready to decompose! For this, we will recommend a lifetable response experiment approach to decomposition (@caswell1989analysis), and that will simply require citing some other work should the sensitivity calculation for this setup of a multistate model (in preparation). For the present, we will set up the decomposition using the @horiuchi2008decomposition approach. Either way, no new innovation is required to proceed to the decomposition now that expectancy is redefined in terms of incidence. In the final paper, we will show how expectancy results are the same as standard Sullivan expectancies, but how decomposition results are different from previous Sullivan decompositions. The lessons depend on whether we look at healthy, unhealthy, or total life expectancy. We will recommend this method as a neat and nifty way to decompose total life expectancy as well. Finally, we'll validate the transformation from Sullivan inputs to rates.
+
+Here are some functions to get started (not to literally include in the paper, just to have everything in one place)
+```{r, message = FALSE}
+library(tidyverse)
+library(DemoDecomp)
+```
+
+Here's an old-fashioned Sullivan function, for now hard coded to only do HLE, that should change. I need to reframe in terms of $m(a)$, just a minor change.
+```{r}
+sully_normal <- function(qx_all, pux){
+  lx_all <- c(1,cumprod(1-qx_all))
+  Lx_all <- (lx_all[-1] + lx_all[-length(lx_all)])/2
+  
+  sum(Lx_all * (1-pux))
+}
+```
+
+This is the rates-based version; I need to reframe in terms of $m(a)$, just a minor change.
+
+```{r}
+sully_rates <- function(qhx,qux,onsetx,p0,type = "h"){
+  n   <- length(qhx)
+  lux <- rep(0,n+1)
+  lhx <- rep(0,n+1)
+  
+  lux[1] <- p0
+  lhx[1] <- 1 - p0
+  for (i in 1:n){
+    lux[i+1] <- lux[i] * (1 - qux[i]) + lhx[i] * onsetx[i]
+    lhx[i+1] <- lhx[i] * (1 - qhx[i] - onsetx[i])
+  }
+  lx_all <- lhx + lux
+  # simple linear avg
+  Lux <- (lux[-1] + lux[1:n])/2
+  Lhx <- (lhx[-1] + lhx[1:n])/2
+  #pux = lux[-1] / lx_all[-1]
+  Lx_all <- Lux + Lhx
+  # 
+ pux <- Lux / Lx_all
+  # 
+ if (type == "h"){
+   return( sum(Lx_all * (1-pux)))
+ }
+ if (type == "u"){
+   return(sum(Lx_all * (pux)))
+ }
+ if (type == "t"){
+   return(sum(Lx_all))
+ }
+
+  #sum(Lhx)
+}
+
+```
+
+This gets incidence from Sullivan inputs; also we need to reframe for mx instead of qx, qx was a bad spontaneous choice, but it'll all work out 
+```{r}
+sully_derive_rates <- function(qx_all, pux, R_guess){
+  n      <- length(qx_all)
+  qhx    <- qx_all / ((1 - pux) + pux * R_guess)
+  qux    <- qhx * R_guess
+  lx_all <- c(1,cumprod(1-qx_all))
+  
+  # need one more element to end of pux
+  pux    <- c(pux,pux[n])
+  lux    <- lx_all * pux
+  lhx    <- lx_all * (1 - pux)
+  
+  # simple closeout, as we need one more element
+  # could also closeout lux, lhx with extra 0 element
+  
+  u_netx <- lux[2:(n+1)] - lux[1:n]
+  dux    <- lux[1:n] * qux
+  tux    <- u_netx + dux
+  onsetx <- tux / lhx[1:n]
+  age    <- 1:n - 1
+  
+  tibble(age, qux, qhx, onsetx)
+}
+```
+
+Wrap both functions to accept a single vector of arguments:
+
+```{r}
+sully_rates_vec <- function(pars,type='h'){
+  n  <- length(pars)
+  p0 <- pars[n]
+  pars <- pars[-n]
+  n <- n-1
+  dim(pars) <- c(n/3,3)
+  qhx<- pars[,1]
+  qux<- pars[,2]
+  onsetx <- pars[,3]
+  sully_rates(qhx=qhx,qux=qux,onsetx=onsetx,p0=p0,type=type)
+}
+
+sully_normal_vec <- function(pars){
+  n<- length(pars)
+  dim(pars) <- c(n/2,2)
+  sully_normal(qx_all=pars[,1],pux=pars[,2])
+}
+```
+
+A full service rates decomp function
+
+```{r}
+sully_rates_decomp <- function(qx1,qx2,pux1,pux2,R1,R2,type='h'){
+  init1 <- pux1[1]
+  init2 <- pux2[1]
+  p1    <- sully_derive_rates(qx1,pux1,R1)
+  p2    <- sully_derive_rates(qx2,pux2,R2)
+  cc    <- horiuchi(sully_rates_vec,
+                       c(p1$qhx,
+                         p1$qux,
+                         p1$onsetx,
+                         init1),
+                       c(p2$qhx,
+                         p2$qux,
+                         p2$onsetx,
+                         init2),
+                       type = type,
+                       N=20)  
+  n <- length(cc)
+  init <- cc[init]
+  cc <- cc[-n]
+  n <- n-1
+  dim(cc) <- c(n/3,3)  
+  colnames(cc) <- c("qhx","qux","onset")
+  age <- 1:nrow(cc)-1
+  out <- as_tibble(cc) |> 
+    mutate(age = age, .before = 1) |> 
+    pivot_longer(-age, names_to = "component", values_to = "value") |> 
+    add_row(age=0,component = "init", value = init)
+  
+  return(out)
+}
+
+```
+
+# References
+
+
