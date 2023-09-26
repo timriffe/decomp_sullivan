@@ -3,6 +3,7 @@
 
 library(tidyverse)
 library(DemoDecomp)
+library(ungroup)
 
 # ----- Helper functions ----- #
 # calculate q(x) from m(x). Assumes single age intervals
@@ -99,8 +100,6 @@ sully_rates <- function(qhx, qux, phux, p0, type = "h"){
 
   #sum(Lhx)
 }
-
-```
 
 # This gets incidence from Sullivan inputs framed in terms of $m(a)$
 
