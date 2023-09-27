@@ -1,0 +1,505 @@
+measure_id,measure_name,location_id,location_name,sex_id,sex_name,age_id,age_name,cause_id,cause_name,metric_id,metric_name,year,val,upper,lower
+5,Prevalence,102,United States of America,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2017,376674.5333859496,438459.8025472516,313521.63060831337
+5,Prevalence,102,United States of America,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2017,444945.96960185026,514863.7826197739,381369.6252103622
+5,Prevalence,102,United States of America,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,392022.71091636026,456803.58088957344,326741.3559138266
+5,Prevalence,102,United States of America,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,463106.7917150307,535868.5210124028,395873.0525973999
+5,Prevalence,102,United States of America,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2019,406930.5353125199,474546.8156518743,339101.45733939187
+5,Prevalence,102,United States of America,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2019,481106.8441090085,555243.7925448982,411686.38940596883
+5,Prevalence,102,United States of America,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2017,105508.95098990474,121780.49638734784,88907.41455394655
+5,Prevalence,102,United States of America,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2017,325078.66438599664,367085.939567937,277276.75269528665
+5,Prevalence,102,United States of America,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2018,109658.5551677015,126363.27997300468,92480.22644532508
+5,Prevalence,102,United States of America,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2018,335861.1253254312,380113.9720089097,285818.7888925362
+5,Prevalence,102,United States of America,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2019,113644.74832101703,130699.65089776587,95471.45546501764
+5,Prevalence,102,United States of America,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2019,345545.30026177753,391680.23403816775,294103.3793834255
+5,Prevalence,102,United States of America,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2017,2037.5003042966919,2881.81032233952,1150.278880022585
+5,Prevalence,102,United States of America,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2017,2659.3203962463167,3652.696862905146,1558.3457992643248
+5,Prevalence,102,United States of America,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2018,2045.3409652512366,2902.165026726367,1148.7917484117872
+5,Prevalence,102,United States of America,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2018,2666.628835243824,3674.47412561607,1550.485268524733
+5,Prevalence,102,United States of America,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2019,2074.5036501588975,2954.8374387279828,1164.0369538419325
+5,Prevalence,102,United States of America,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2019,2698.1834530377446,3731.964916358793,1557.6238873711357
+5,Prevalence,102,United States of America,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2017,13126.37219137985,17058.487445131323,8423.392561483863
+5,Prevalence,102,United States of America,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2017,16577.373081051497,21119.275650834825,11169.328360912084
+5,Prevalence,102,United States of America,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2018,13020.098049655004,16973.407357313346,8402.588669616107
+5,Prevalence,102,United States of America,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2018,16457.538517749686,20980.151722719285,11089.719974519781
+5,Prevalence,102,United States of America,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2019,12815.144492310952,16746.878019112042,8212.260572553276
+5,Prevalence,102,United States of America,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2019,16190.117062172416,20748.291915835904,10905.448815431695
+5,Prevalence,102,United States of America,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2017,23615.4568374191,29047.605542961886,16503.170681908818
+5,Prevalence,102,United States of America,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2017,27060.81123727217,32898.4265568961,19718.380485326736
+5,Prevalence,102,United States of America,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2018,23124.666386197383,28499.484019231706,16186.893903036736
+5,Prevalence,102,United States of America,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2018,26421.479785340645,32155.09951694518,19284.749478929276
+5,Prevalence,102,United States of America,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2019,22792.452759906297,28189.411703797097,16032.80750590484
+5,Prevalence,102,United States of America,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2019,25910.983480930805,31621.189699821312,18853.94969090796
+5,Prevalence,102,United States of America,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2017,39708.40572265757,48266.15972912077,29374.74806318892
+5,Prevalence,102,United States of America,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2017,40646.5401517217,48136.191999044706,31216.010581015813
+5,Prevalence,102,United States of America,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2018,39763.00491895202,48208.32670325457,29442.643067029283
+5,Prevalence,102,United States of America,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2018,40584.035365542084,48170.34650204368,31245.47144315274
+5,Prevalence,102,United States of America,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2019,40019.24525394044,48307.947147010316,29647.09745002096
+5,Prevalence,102,United States of America,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2019,40631.652550388666,48270.99748507513,31215.483765676534
+5,Prevalence,102,United States of America,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2017,71392.0046799236,86420.15773891966,57105.16234947588
+5,Prevalence,102,United States of America,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2017,71585.39332927494,84987.1117383401,58386.50594613374
+5,Prevalence,102,United States of America,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2018,73132.58550291952,88570.43259507387,58493.21552329281
+5,Prevalence,102,United States of America,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2018,73147.09728322832,86801.12519357039,59763.706800083746
+5,Prevalence,102,United States of America,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2019,74473.61523142722,90105.71782394497,59669.6979334293
+5,Prevalence,102,United States of America,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2019,74227.24417218103,88198.38028650252,60507.716058271944
+5,Prevalence,102,United States of America,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2017,235194.43540369542,278758.16254336823,192906.3808943706
+5,Prevalence,102,United States of America,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2017,287538.40373647254,338726.78597131284,243572.4178278366
+5,Prevalence,102,United States of America,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,248683.006933923,294756.505395003,203406.412342676
+5,Prevalence,102,United States of America,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,303373.4308022468,357011.5091980331,257276.48096106513
+5,Prevalence,102,United States of America,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2019,259839.3976367349,307976.67963884765,212043.45152005408
+5,Prevalence,102,United States of America,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2019,317250.2124353548,372117.8863485989,269415.31243204686
+5,Prevalence,102,United States of America,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2017,287365.7337535586,333366.5211004167,240255.23798652182
+5,Prevalence,102,United States of America,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2017,394589.9117005806,453234.69758158596,338763.5726195354
+5,Prevalence,102,United States of America,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2018,304581.5131366231,353266.3450152124,254104.11406609585
+5,Prevalence,102,United States of America,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2018,417109.4108123805,479286.01345639856,357915.2488191145
+5,Prevalence,102,United States of America,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2019,318665.2014637401,369758.0480582063,264275.96687174955
+5,Prevalence,102,United States of America,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2019,436115.6854795908,502953.3920402101,374439.1707835561
+5,Prevalence,102,United States of America,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2017,329442.45507565327,384774.89999965247,276528.1017180747
+5,Prevalence,102,United States of America,2,Female,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2017,525977.6745062616,616452.742708337,450216.1849378387
+5,Prevalence,102,United States of America,1,Male,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2018,337954.3969960039,394811.3057193995,282289.2140646142
+5,Prevalence,102,United States of America,2,Female,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2018,534831.5646919374,624545.3763697908,458091.4680186253
+5,Prevalence,102,United States of America,1,Male,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2019,346063.07809723675,405064.23379359307,288684.65625998855
+5,Prevalence,102,United States of America,2,Female,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2019,545968.623032668,635024.2582764929,467487.57300754753
+5,Prevalence,102,United States of America,1,Male,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2017,304650.2256700219,354549.07422900986,256862.75032294393
+5,Prevalence,102,United States of America,2,Female,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2017,596061.6701718018,690614.4138314924,512644.7840291447
+5,Prevalence,102,United States of America,1,Male,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2018,306029.4366983055,356262.4234410303,257220.3166807095
+5,Prevalence,102,United States of America,2,Female,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2018,594690.0180592749,689398.0725793709,510489.4057240908
+5,Prevalence,102,United States of America,1,Male,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2019,305384.1155063575,356750.1290770962,256066.4610921639
+5,Prevalence,102,United States of America,2,Female,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2019,590456.6021196387,684257.1427023266,507608.90357976366
+5,Prevalence,102,United States of America,1,Male,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2017,193426.27977437226,223745.53830493102,162834.17652902685
+5,Prevalence,102,United States of America,2,Female,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2017,487218.0170737959,559144.0700850815,420012.80783712165
+5,Prevalence,102,United States of America,1,Male,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2018,199019.04276319046,230227.1350416322,167929.5124222236
+5,Prevalence,102,United States of America,2,Female,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2018,497078.59806936735,570716.4331667492,428462.9686437348
+5,Prevalence,102,United States of America,1,Male,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2019,201612.44006637356,233922.24769928906,169625.5991959616
+5,Prevalence,102,United States of America,2,Female,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2019,499369.104639212,574429.2127040358,429764.6232053681
+5,Prevalence,102,United States of America,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2017,2221.2356805892587,3177.8390887397472,1324.7603843352654
+5,Prevalence,81,Germany,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2017,2724.834631805472,3831.471361886531,1676.1870062318937
+5,Prevalence,81,Germany,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2018,2078.8037410394013,2970.568380180546,1231.4953464066798
+5,Prevalence,81,Germany,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2018,2569.243957265841,3614.09057600603,1591.0764282038176
+5,Prevalence,81,Germany,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2019,1949.3213767488025,2807.2443377829854,1137.1281762845567
+5,Prevalence,81,Germany,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2019,2447.659274661417,3433.2388433046262,1531.5802902164728
+5,Prevalence,81,Germany,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2017,6400.41241325935,8788.76504583509,4300.55602183789
+5,Prevalence,81,Germany,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2017,7243.837614724396,9624.589887984634,4973.420755523968
+5,Prevalence,81,Germany,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2018,6306.982857119999,8659.393381035745,4257.788316166612
+5,Prevalence,81,Germany,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2018,7157.641482075056,9568.951503826143,5017.79964655952
+5,Prevalence,81,Germany,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2019,6127.345980847372,8434.513434388386,4176.673515521252
+5,Prevalence,81,Germany,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2019,7013.942882672076,9371.20985279773,4942.653891854724
+5,Prevalence,81,Germany,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2017,10820.198757507895,13969.46795648447,7677.179731768483
+5,Prevalence,81,Germany,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2017,11890.113776005526,15312.703801490294,8700.487342116247
+5,Prevalence,81,Germany,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2018,11172.689445212642,14439.091668265419,7976.834636866374
+5,Prevalence,81,Germany,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2018,12267.858092590648,15700.339548747655,9015.485579785469
+5,Prevalence,81,Germany,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2019,11415.94305902198,14757.971410569375,8155.222694582987
+5,Prevalence,81,Germany,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2019,12568.057951646604,16111.691883894653,9301.472259308714
+5,Prevalence,81,Germany,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2017,16656.488634958136,21439.27621616659,12511.888224557331
+5,Prevalence,81,Germany,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2017,19532.42433576867,25057.17025449296,14917.898170650811
+5,Prevalence,81,Germany,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2018,17140.08923990079,21849.221423773975,12878.536512243549
+5,Prevalence,81,Germany,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2018,19935.180185258574,25459.64754410662,15210.765208325269
+5,Prevalence,81,Germany,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2019,17739.06610052774,22368.59473473848,13365.562941821174
+5,Prevalence,81,Germany,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2019,20516.223410876817,26124.916395833163,15729.207020795187
+5,Prevalence,81,Germany,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2017,45398.14796820983,58712.000562088455,34547.44131840398
+5,Prevalence,81,Germany,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2017,66422.08359777638,84760.70690828591,51419.63329876568
+5,Prevalence,81,Germany,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,45604.30772768942,57914.01009409777,34835.23387242458
+5,Prevalence,81,Germany,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,66291.95795848378,84315.83266690744,51987.01469386611
+5,Prevalence,81,Germany,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2019,47153.62403597614,60116.92430245183,36147.43799828279
+5,Prevalence,81,Germany,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2019,67830.70644757917,86740.9412470837,53205.38250622502
+5,Prevalence,81,Germany,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2017,108528.06881594146,134594.18299517664,84632.22298956838
+5,Prevalence,81,Germany,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2017,174377.140912839,218138.9068868791,138095.6439872507
+5,Prevalence,81,Germany,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2018,105328.3940725975,131152.6588598362,82058.04436462339
+5,Prevalence,81,Germany,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2018,168284.06199583437,209300.38902332683,134381.28837646596
+5,Prevalence,81,Germany,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2019,100722.62198234018,126132.82274645472,78470.60787444105
+5,Prevalence,81,Germany,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2019,159723.50239079059,198685.22934625717,126768.68289284267
+5,Prevalence,81,Germany,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2017,129761.98743859047,163653.34275619563,100662.56077477019
+5,Prevalence,81,Germany,2,Female,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2017,246775.8973202635,309407.0577429436,195649.24915891702
+5,Prevalence,81,Germany,1,Male,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2018,140889.5521891292,176656.33426832262,109768.73083266914
+5,Prevalence,81,Germany,2,Female,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2018,264398.97560445085,330488.51558412326,210843.27815620255
+5,Prevalence,81,Germany,1,Male,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2019,149924.47595905256,188818.32398454944,116568.44571217892
+5,Prevalence,81,Germany,2,Female,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2019,277560.91450762947,345739.8730278739,221033.936711404
+5,Prevalence,81,Germany,1,Male,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2017,93720.98064889446,116720.92153985663,72599.86470811049
+5,Prevalence,81,Germany,2,Female,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2017,231623.78924313711,284109.61520662555,181439.1666264921
+5,Prevalence,81,Germany,1,Male,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2018,94486.41684459033,117528.43767351675,74032.0697836274
+5,Prevalence,81,Germany,2,Female,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2018,229216.85392116915,283654.87697362993,181043.64085856974
+5,Prevalence,81,Germany,1,Male,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2019,101395.33521504338,125880.33774054906,79427.84305089693
+5,Prevalence,81,Germany,2,Female,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2019,238682.96080208634,293903.90162376646,188598.03433941063
+5,Prevalence,81,Germany,1,Male,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2017,35454.83154489899,43905.76019746226,27713.56672299802
+5,Prevalence,81,Germany,2,Female,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2017,150036.19273351532,181860.92586638802,120374.53597245562
+5,Prevalence,81,Germany,1,Male,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2018,41085.11478120588,50556.60369099122,32293.085372647718
+5,Prevalence,81,Germany,2,Female,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2018,154620.98986153048,186275.63121619236,124551.69238754058
+5,Prevalence,81,Germany,1,Male,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2019,46272.80490769011,56890.726689347226,36608.37428465307
+5,Prevalence,81,Germany,2,Female,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2019,160230.87242485292,194175.3605584513,129898.00830693438
+5,Prevalence,81,Germany,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2017,73495.03312091387,92291.54802534162,58000.60406935797
+5,Prevalence,81,Germany,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2017,104006.14037948045,129860.89018289073,83363.04027711322
+5,Prevalence,81,Germany,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,74376.4096596885,92447.74452978985,58512.33917938052
+5,Prevalence,81,Germany,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,104838.3026622445,130042.54057818203,84596.77294977423
+5,Prevalence,81,Germany,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2019,76470.32374868858,95237.6329785616,60702.65122209627
+5,Prevalence,81,Germany,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2019,106928.81902823807,133206.30013139945,85596.57091068588
+5,Prevalence,81,Germany,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2017,254.9785521296014,412.1393977706273,120.86278654793396
+5,Prevalence,81,Germany,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2017,328.5595944582088,513.3366737611884,170.80075142164264
+5,Prevalence,81,Germany,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2018,257.99285405216494,419.00104171366155,125.44843469223991
+5,Prevalence,81,Germany,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2018,333.49639746091094,521.0911275601964,176.06060701773328
+5,Prevalence,81,Germany,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2019,260.8523603158299,419.3825310361573,127.69517009735132
+5,Prevalence,81,Germany,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2019,342.1624085114766,525.0979163781059,180.28576063866166
+5,Prevalence,81,Germany,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2017,11720.386445886064,14411.148654405584,9247.522390552023
+5,Prevalence,81,Germany,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2017,69403.25932568392,82392.85437804055,56857.61651398564
+5,Prevalence,81,Germany,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2018,11793.283111973245,14428.755029619619,9450.171002080442
+5,Prevalence,81,Germany,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2018,70606.98893529676,83667.75989131814,57921.79144067127
+5,Prevalence,81,Germany,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2019,12135.917423072846,14943.083205745303,9696.608671707378
+5,Prevalence,81,Germany,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2019,72025.3889563033,85183.90154859069,58754.42042189818
+5,Prevalence,102,United States of America,1,Male,235,95+ years,429,Breast cancer,1,Number,2017,175.07835727276455,239.1882199328214,123.64034911795659
+5,Prevalence,102,United States of America,2,Female,235,95+ years,429,Breast cancer,1,Number,2017,30335.880258877376,40890.151415612774,21777.99774618391
+5,Prevalence,102,United States of America,1,Male,235,95+ years,429,Breast cancer,1,Number,2018,181.82876515279276,248.6242788560212,127.89030358149375
+5,Prevalence,102,United States of America,2,Female,235,95+ years,429,Breast cancer,1,Number,2018,31324.10141497367,42323.367645291335,22457.642961655558
+5,Prevalence,102,United States of America,1,Male,235,95+ years,429,Breast cancer,1,Number,2019,188.25012743068777,257.5633222754601,132.965207351066
+5,Prevalence,102,United States of America,2,Female,235,95+ years,429,Breast cancer,1,Number,2019,32258.318627741286,43489.62375659676,23181.60933828228
+5,Prevalence,102,United States of America,1,Male,5,1-4 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,5,1-4 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,5,1-4 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,5,1-4 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,5,1-4 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,5,1-4 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,6,5-9 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,6,5-9 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,6,5-9 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,6,5-9 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,6,5-9 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,6,5-9 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,7,10-14 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,7,10-14 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,5,1-4 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,5,1-4 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,5,1-4 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,5,1-4 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,5,1-4 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,5,1-4 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,6,5-9 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,6,5-9 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,6,5-9 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,6,5-9 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,6,5-9 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,6,5-9 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,7,10-14 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,7,10-14 years,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,7,10-14 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,7,10-14 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,7,10-14 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,7,10-14 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,7,10-14 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,7,10-14 years,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,7,10-14 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,7,10-14 years,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,8,15-19 years,429,Breast cancer,1,Number,2017,186.1543889567645,216.95042458514212,162.22051107097874
+5,Prevalence,102,United States of America,2,Female,8,15-19 years,429,Breast cancer,1,Number,2017,547.66037129443,612.8247366783985,492.82845833210007
+5,Prevalence,102,United States of America,1,Male,8,15-19 years,429,Breast cancer,1,Number,2018,184.61669227021147,216.25895175956492,158.28780832711274
+5,Prevalence,102,United States of America,2,Female,8,15-19 years,429,Breast cancer,1,Number,2018,542.5481570387328,615.6185505907574,480.96224085655706
+5,Prevalence,102,United States of America,1,Male,8,15-19 years,429,Breast cancer,1,Number,2019,181.06594533631142,227.38773125383804,145.19273386488902
+5,Prevalence,102,United States of America,2,Female,8,15-19 years,429,Breast cancer,1,Number,2019,506.88874191714405,602.5835127392335,423.57956748108404
+5,Prevalence,102,United States of America,1,Male,9,20-24 years,429,Breast cancer,1,Number,2017,170.72063079115756,201.28759470590427,146.6893065353197
+5,Prevalence,102,United States of America,2,Female,9,20-24 years,429,Breast cancer,1,Number,2017,1676.8219392755877,1837.4960290402441,1530.910443337712
+5,Prevalence,102,United States of America,1,Male,9,20-24 years,429,Breast cancer,1,Number,2018,165.0750014139294,196.94430783822273,139.11096473677406
+5,Prevalence,102,United States of America,2,Female,9,20-24 years,429,Breast cancer,1,Number,2018,1640.4859114159854,1862.2280025035675,1444.8656098509762
+5,Prevalence,102,United States of America,1,Male,9,20-24 years,429,Breast cancer,1,Number,2019,160.14587377074378,199.80463834636197,128.06305975653572
+5,Prevalence,102,United States of America,2,Female,9,20-24 years,429,Breast cancer,1,Number,2019,1623.38372117044,2035.7382923945122,1281.6518211375967
+5,Prevalence,102,United States of America,1,Male,10,25-29 years,429,Breast cancer,1,Number,2017,176.6993542291278,215.64829639532908,144.91077606794818
+5,Prevalence,102,United States of America,2,Female,10,25-29 years,429,Breast cancer,1,Number,2017,9665.169668633369,10589.347477742662,8592.94460549717
+5,Prevalence,102,United States of America,1,Male,10,25-29 years,429,Breast cancer,1,Number,2018,172.30466817323347,211.5032750065002,140.55508966997508
+5,Prevalence,102,United States of America,2,Female,10,25-29 years,429,Breast cancer,1,Number,2018,9448.179403634378,10856.557225002296,8234.049517747877
+5,Prevalence,102,United States of America,1,Male,10,25-29 years,429,Breast cancer,1,Number,2019,165.56312156652425,211.20528804770183,131.0745671217418
+5,Prevalence,102,United States of America,2,Female,10,25-29 years,429,Breast cancer,1,Number,2019,8792.104349878975,11405.783280589838,6802.85790822175
+5,Prevalence,102,United States of America,1,Male,11,30-34 years,429,Breast cancer,1,Number,2017,199.66239939776574,256.5191026838265,156.67669452699164
+5,Prevalence,102,United States of America,2,Female,11,30-34 years,429,Breast cancer,1,Number,2017,29122.452167928644,31879.114763602323,26256.606332231077
+5,Prevalence,102,United States of America,1,Male,11,30-34 years,429,Breast cancer,1,Number,2018,194.37714411247183,251.53071456671108,150.795624256021
+5,Prevalence,102,United States of America,2,Female,11,30-34 years,429,Breast cancer,1,Number,2018,28605.820109589265,32683.55947961486,25187.051115659557
+5,Prevalence,102,United States of America,1,Male,11,30-34 years,429,Breast cancer,1,Number,2019,185.572954504703,247.41738004304685,140.08507310172433
+5,Prevalence,102,United States of America,2,Female,11,30-34 years,429,Breast cancer,1,Number,2019,26991.04893756997,34405.16619927402,20906.877383855408
+5,Prevalence,102,United States of America,1,Male,12,35-39 years,429,Breast cancer,1,Number,2017,398.9031253581254,477.94521521557874,331.80247565916113
+5,Prevalence,102,United States of America,2,Female,12,35-39 years,429,Breast cancer,1,Number,2017,54131.69883516447,58419.73193076041,50153.61743137667
+5,Prevalence,102,United States of America,1,Male,12,35-39 years,429,Breast cancer,1,Number,2018,393.62038622146684,481.4080895288305,324.21889616408134
+5,Prevalence,102,United States of America,2,Female,12,35-39 years,429,Breast cancer,1,Number,2018,54221.45727641013,60969.87233784909,48396.03830721792
+5,Prevalence,102,United States of America,1,Male,12,35-39 years,429,Breast cancer,1,Number,2019,379.70012094136166,481.2717830610518,298.8425616515039
+5,Prevalence,102,United States of America,2,Female,12,35-39 years,429,Breast cancer,1,Number,2019,53840.27562504917,68182.27725984705,42584.9490604282
+5,Prevalence,102,United States of America,1,Male,13,40-44 years,429,Breast cancer,1,Number,2017,634.5387973851621,751.5648090088151,535.8887515663131
+5,Prevalence,102,United States of America,2,Female,13,40-44 years,429,Breast cancer,1,Number,2017,106516.45920108393,114072.5616221119,98264.68242797503
+5,Prevalence,102,United States of America,1,Male,13,40-44 years,429,Breast cancer,1,Number,2018,633.3756378571277,753.8799553336194,523.5112637716377
+5,Prevalence,102,United States of America,2,Female,13,40-44 years,429,Breast cancer,1,Number,2018,105976.72706537214,118428.68589408231,94250.50715076258
+5,Prevalence,102,United States of America,1,Male,13,40-44 years,429,Breast cancer,1,Number,2019,630.790434485581,798.6359427568366,495.3952977602501
+5,Prevalence,102,United States of America,2,Female,13,40-44 years,429,Breast cancer,1,Number,2019,103614.19792148015,129308.08529399915,82377.75673976037
+5,Prevalence,81,Germany,1,Male,8,15-19 years,429,Breast cancer,1,Number,2017,16.2793357441044,26.713354230989328,9.403640902700667
+5,Prevalence,81,Germany,2,Female,8,15-19 years,429,Breast cancer,1,Number,2017,97.32792079453469,149.5083871218255,59.61381946466375
+5,Prevalence,81,Germany,1,Male,8,15-19 years,429,Breast cancer,1,Number,2018,16.20209260687348,26.7368868990632,9.539761681185116
+5,Prevalence,81,Germany,2,Female,8,15-19 years,429,Breast cancer,1,Number,2018,96.22610040392487,148.7041341617434,59.32240324396832
+5,Prevalence,81,Germany,1,Male,8,15-19 years,429,Breast cancer,1,Number,2019,16.060101115885715,27.075408837812713,8.704429389318149
+5,Prevalence,81,Germany,2,Female,8,15-19 years,429,Breast cancer,1,Number,2019,95.51037338150061,153.3392327572804,57.21001222842524
+5,Prevalence,81,Germany,1,Male,9,20-24 years,429,Breast cancer,1,Number,2017,18.964725988950246,29.88657831847763,11.382355462433033
+5,Prevalence,81,Germany,2,Female,9,20-24 years,429,Breast cancer,1,Number,2017,332.6894576165433,457.0611703029317,226.6221774897887
+5,Prevalence,81,Germany,1,Male,9,20-24 years,429,Breast cancer,1,Number,2018,19.555889221430558,30.842964561595387,11.68253607023319
+5,Prevalence,81,Germany,2,Female,9,20-24 years,429,Breast cancer,1,Number,2018,337.5361021452581,467.7813412874004,230.09930282948181
+5,Prevalence,81,Germany,1,Male,9,20-24 years,429,Breast cancer,1,Number,2019,20.03291114558287,33.02530691720051,11.436602451380475
+5,Prevalence,81,Germany,2,Female,9,20-24 years,429,Breast cancer,1,Number,2019,342.80568881676777,493.75230393615277,223.77189055666008
+5,Prevalence,81,Germany,1,Male,10,25-29 years,429,Breast cancer,1,Number,2017,22.942913272578938,35.40623333645751,14.276669826322582
+5,Prevalence,81,Germany,2,Female,10,25-29 years,429,Breast cancer,1,Number,2017,2284.56278414734,3101.1950657775515,1627.5487136271954
+5,Prevalence,81,Germany,1,Male,10,25-29 years,429,Breast cancer,1,Number,2018,23.041866202935548,35.76696911292549,14.167969911296838
+5,Prevalence,81,Germany,2,Female,10,25-29 years,429,Breast cancer,1,Number,2018,2250.148027648948,3123.853157872133,1561.3572229132078
+5,Prevalence,81,Germany,1,Male,10,25-29 years,429,Breast cancer,1,Number,2019,22.978503416504072,35.63480321387159,13.877561238481126
+5,Prevalence,81,Germany,2,Female,10,25-29 years,429,Breast cancer,1,Number,2019,2199.235177089676,3353.5590498670804,1392.0274797535697
+5,Prevalence,81,Germany,1,Male,11,30-34 years,429,Breast cancer,1,Number,2017,23.658822274472374,37.92161896237371,14.037988150114396
+5,Prevalence,81,Germany,2,Female,11,30-34 years,429,Breast cancer,1,Number,2017,6770.811922035268,8977.564733248075,4862.011370795234
+5,Prevalence,81,Germany,1,Male,11,30-34 years,429,Breast cancer,1,Number,2018,24.609341109143383,39.792188954897284,14.606631060002266
+5,Prevalence,81,Germany,2,Female,11,30-34 years,429,Breast cancer,1,Number,2018,6865.225035641787,9280.45183311721,4810.776336439584
+5,Prevalence,81,Germany,1,Male,11,30-34 years,429,Breast cancer,1,Number,2019,25.43789935605071,41.41499838733856,14.942699252895407
+5,Prevalence,81,Germany,2,Female,11,30-34 years,429,Breast cancer,1,Number,2019,6970.245651959914,10396.179248828403,4543.291646335936
+5,Prevalence,81,Germany,1,Male,12,35-39 years,429,Breast cancer,1,Number,2017,43.111030446621655,78.34054622857862,22.403175839917974
+5,Prevalence,81,Germany,2,Female,12,35-39 years,429,Breast cancer,1,Number,2017,13298.13372591671,17695.931862927333,9802.797277357093
+5,Prevalence,81,Germany,1,Male,12,35-39 years,429,Breast cancer,1,Number,2018,43.813100431522585,79.91239420166379,23.002990045786067
+5,Prevalence,81,Germany,2,Female,12,35-39 years,429,Breast cancer,1,Number,2018,13549.105850784863,18631.410001525903,9735.765482591507
+5,Prevalence,81,Germany,1,Male,12,35-39 years,429,Breast cancer,1,Number,2019,44.51630699402877,83.61775237362014,22.437592042301493
+5,Prevalence,81,Germany,2,Female,12,35-39 years,429,Breast cancer,1,Number,2019,13714.44660651793,20267.92157901242,9111.126729588594
+5,Prevalence,81,Germany,1,Male,13,40-44 years,429,Breast cancer,1,Number,2017,74.0280921715679,143.93586537590357,38.0463756228238
+5,Prevalence,81,Germany,2,Female,13,40-44 years,429,Breast cancer,1,Number,2017,24389.839190977804,31777.251782139123,18654.314592437353
+5,Prevalence,81,Germany,1,Male,13,40-44 years,429,Breast cancer,1,Number,2018,74.99229344796453,145.86666773730863,37.66505709334207
+5,Prevalence,81,Germany,2,Female,13,40-44 years,429,Breast cancer,1,Number,2018,24677.542492027053,32709.728189226953,18181.850321170317
+5,Prevalence,81,Germany,1,Male,13,40-44 years,429,Breast cancer,1,Number,2019,76.52194588324451,156.1268315979419,35.90533725082755
+5,Prevalence,81,Germany,2,Female,13,40-44 years,429,Breast cancer,1,Number,2019,25057.112864654184,36169.705217059505,17047.87674029543
+5,Prevalence,81,Germany,1,Male,14,45-49 years,429,Breast cancer,1,Number,2017,151.72128653228353,274.06580913650924,77.75699918784025
+5,Prevalence,81,Germany,2,Female,14,45-49 years,429,Breast cancer,1,Number,2017,45032.344810388924,58121.32807366549,33778.88981927825
+5,Prevalence,81,Germany,1,Male,14,45-49 years,429,Breast cancer,1,Number,2018,140.93406604008234,252.08783788088556,72.44681404143374
+5,Prevalence,81,Germany,2,Female,14,45-49 years,429,Breast cancer,1,Number,2018,42389.42964182532,55643.999615249966,31399.76783556783
+5,Prevalence,81,Germany,1,Male,14,45-49 years,429,Breast cancer,1,Number,2019,132.33134937044977,248.04476314373093,64.69124903523634
+5,Prevalence,81,Germany,2,Female,14,45-49 years,429,Breast cancer,1,Number,2019,40209.40196471666,57469.04232930245,28049.81179828301
+5,Prevalence,81,Germany,1,Male,15,50-54 years,429,Breast cancer,1,Number,2017,267.7936081716182,454.9077530526459,148.4587870398387
+5,Prevalence,81,Germany,2,Female,15,50-54 years,429,Breast cancer,1,Number,2017,65952.44390693748,83306.05213721328,52248.752830971425
+5,Prevalence,81,Germany,1,Male,15,50-54 years,429,Breast cancer,1,Number,2018,265.01822903674105,450.0946992427506,140.91336368779503
+5,Prevalence,81,Germany,2,Female,15,50-54 years,429,Breast cancer,1,Number,2018,64747.47971518427,82573.7393345238,49637.32349870409
+5,Prevalence,81,Germany,1,Male,15,50-54 years,429,Breast cancer,1,Number,2019,261.6224041374209,477.3963740624083,130.41420184711288
+5,Prevalence,81,Germany,2,Female,15,50-54 years,429,Breast cancer,1,Number,2019,62935.47070298432,86564.3551376844,45542.956830899355
+5,Prevalence,81,Germany,1,Male,16,55-59 years,429,Breast cancer,1,Number,2017,417.5068012456559,699.0215088092415,226.33547000871383
+5,Prevalence,81,Germany,2,Female,16,55-59 years,429,Breast cancer,1,Number,2017,78111.56599204303,97925.57036374022,62341.5235521283
+5,Prevalence,81,Germany,1,Male,16,55-59 years,429,Breast cancer,1,Number,2018,429.1120014574284,714.8332931551645,234.63557115666572
+5,Prevalence,81,Germany,2,Female,16,55-59 years,429,Breast cancer,1,Number,2018,79773.61733814573,101704.0315819755,62826.85108759749
+5,Prevalence,81,Germany,1,Male,16,55-59 years,429,Breast cancer,1,Number,2019,437.5946564502326,761.199659636362,228.8555545471712
+5,Prevalence,81,Germany,2,Female,16,55-59 years,429,Breast cancer,1,Number,2019,80716.10798839417,108506.08345709935,60896.753767628405
+5,Prevalence,81,Germany,1,Male,17,60-64 years,429,Breast cancer,1,Number,2017,518.291240426534,831.6619757074797,304.32473710841975
+5,Prevalence,81,Germany,2,Female,17,60-64 years,429,Breast cancer,1,Number,2017,88171.48471598478,107919.66036979822,71480.49224964471
+5,Prevalence,81,Germany,1,Male,17,60-64 years,429,Breast cancer,1,Number,2018,532.8479402554946,884.8928064597201,310.71538046430123
+5,Prevalence,81,Germany,2,Female,17,60-64 years,429,Breast cancer,1,Number,2018,89022.59948014261,110509.7294592345,70680.66364637905
+5,Prevalence,81,Germany,1,Male,17,60-64 years,429,Breast cancer,1,Number,2019,555.721389911787,967.2476001002245,311.3498160271654
+5,Prevalence,81,Germany,2,Female,17,60-64 years,429,Breast cancer,1,Number,2019,90709.04949804723,118124.42173465992,69509.05780875019
+5,Prevalence,81,Germany,1,Male,19,70-74 years,429,Breast cancer,1,Number,2017,742.4132331910045,1220.908845333022,459.38394231851714
+5,Prevalence,81,Germany,2,Female,19,70-74 years,429,Breast cancer,1,Number,2017,84277.82858804605,100803.80217277257,70261.48551696174
+5,Prevalence,81,Germany,1,Male,19,70-74 years,429,Breast cancer,1,Number,2018,734.0786938081088,1188.7061088325001,444.27924878455013
+5,Prevalence,81,Germany,2,Female,19,70-74 years,429,Breast cancer,1,Number,2018,83307.1335848203,100748.82910938864,68251.7116443256
+5,Prevalence,81,Germany,1,Male,19,70-74 years,429,Breast cancer,1,Number,2019,747.7787861867638,1296.209877630424,430.49804484626014
+5,Prevalence,81,Germany,2,Female,19,70-74 years,429,Breast cancer,1,Number,2019,84687.40853782398,106672.95713123713,66651.78436102589
+5,Prevalence,81,Germany,1,Male,20,75-79 years,429,Breast cancer,1,Number,2017,824.4143164729793,1250.1428293040397,552.6549535128553
+5,Prevalence,81,Germany,2,Female,20,75-79 years,429,Breast cancer,1,Number,2017,105876.76470295571,125267.82070781427,88635.74922777753
+5,Prevalence,81,Germany,1,Male,20,75-79 years,429,Breast cancer,1,Number,2018,790.0641123959655,1225.594552433579,523.4162393733816
+5,Prevalence,81,Germany,2,Female,20,75-79 years,429,Breast cancer,1,Number,2018,102017.0445242554,122864.7486771014,84898.1537695743
+5,Prevalence,81,Germany,1,Male,20,75-79 years,429,Breast cancer,1,Number,2019,745.9213932108444,1209.889204618336,476.2034800028986
+5,Prevalence,81,Germany,2,Female,20,75-79 years,429,Breast cancer,1,Number,2019,96345.1881732358,119364.39659795017,78958.88550098169
+5,Prevalence,81,Germany,1,Male,28,<1 year,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,28,<1 year,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,28,<1 year,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,28,<1 year,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,28,<1 year,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,28,<1 year,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,30,80-84,429,Breast cancer,1,Number,2017,664.8999658668712,962.4684037908195,443.56189185384255
+5,Prevalence,81,Germany,2,Female,30,80-84,429,Breast cancer,1,Number,2017,80249.52255123893,96544.02156241743,67759.94864275957
+5,Prevalence,81,Germany,1,Male,30,80-84,429,Breast cancer,1,Number,2018,714.1090140885785,1073.0881492645904,469.02295939468814
+5,Prevalence,81,Germany,2,Female,30,80-84,429,Breast cancer,1,Number,2018,86150.05415094894,103697.97658032806,72180.14356209505
+5,Prevalence,81,Germany,1,Male,30,80-84,429,Breast cancer,1,Number,2019,752.3135592460302,1190.337167679652,476.8402121643762
+5,Prevalence,81,Germany,2,Female,30,80-84,429,Breast cancer,1,Number,2019,90341.05899380399,110754.37135897441,72924.29649400571
+5,Prevalence,81,Germany,1,Male,31,85-89,429,Breast cancer,1,Number,2017,341.75284468771054,497.98652535607334,242.85078384415036
+5,Prevalence,81,Germany,2,Female,31,85-89,429,Breast cancer,1,Number,2017,43057.21927838257,50895.535618012145,36107.900098885795
+5,Prevalence,81,Germany,1,Male,31,85-89,429,Breast cancer,1,Number,2018,337.6765502253812,503.4298468160911,235.74824901668
+5,Prevalence,81,Germany,2,Female,31,85-89,429,Breast cancer,1,Number,2018,42223.99391939796,50262.970524636614,35246.49381152569
+5,Prevalence,81,Germany,1,Male,31,85-89,429,Breast cancer,1,Number,2019,354.58273559923003,547.8789384316365,241.22900278981706
+5,Prevalence,81,Germany,2,Female,31,85-89,429,Breast cancer,1,Number,2019,43570.93015897773,52680.88156276559,35809.46603196558
+5,Prevalence,81,Germany,1,Male,32,90-94,429,Breast cancer,1,Number,2017,77.29822239041091,102.07286231651337,58.105665677175736
+5,Prevalence,81,Germany,2,Female,32,90-94,429,Breast cancer,1,Number,2017,15296.251479969304,18137.288926721576,12973.85524470211
+5,Prevalence,81,Germany,1,Male,32,90-94,429,Breast cancer,1,Number,2018,89.0766237600497,117.97476969191602,66.35292533261452
+5,Prevalence,81,Germany,2,Female,32,90-94,429,Breast cancer,1,Number,2018,15673.089916462974,18570.106534093455,13298.62495853754
+5,Prevalence,81,Germany,1,Male,32,90-94,429,Breast cancer,1,Number,2019,99.65263266485806,132.24189375910777,74.85391640499266
+5,Prevalence,81,Germany,2,Female,32,90-94,429,Breast cancer,1,Number,2019,16127.79011251384,19122.59016440988,13571.418938640918
+5,Prevalence,81,Germany,1,Male,232,65-74 years,429,Breast cancer,1,Number,2017,1497.254050163753,2174.706390488017,1014.7746064927883
+5,Prevalence,81,Germany,2,Female,232,65-74 years,429,Breast cancer,1,Number,2017,182862.6333740849,212015.8308558563,156831.73320004923
+5,Prevalence,81,Germany,1,Male,232,65-74 years,429,Breast cancer,1,Number,2018,1507.6725155329589,2260.2376233428336,1010.1819799283106
+5,Prevalence,81,Germany,2,Female,232,65-74 years,429,Breast cancer,1,Number,2018,183367.34272679017,217160.3072859846,152998.17794882908
+5,Prevalence,81,Germany,1,Male,232,65-74 years,429,Breast cancer,1,Number,2019,1533.9572463674872,2445.050935424642,980.4653455929358
+5,Prevalence,81,Germany,2,Female,232,65-74 years,429,Breast cancer,1,Number,2019,185199.4658638968,226170.04898219722,149800.0119253309
+5,Prevalence,81,Germany,1,Male,235,95+ years,429,Breast cancer,1,Number,2017,19.948325494820043,25.82986427097308,15.039385313013426
+5,Prevalence,81,Germany,2,Female,235,95+ years,429,Breast cancer,1,Number,2017,5467.761450100402,6648.40936990633,4507.299183630314
+5,Prevalence,81,Germany,1,Male,235,95+ years,429,Breast cancer,1,Number,2018,19.982027327469254,25.90832615695334,15.059265871586968
+5,Prevalence,81,Germany,2,Female,235,95+ years,429,Breast cancer,1,Number,2018,5554.117055193273,6750.231223945374,4578.137915028257
+5,Prevalence,81,Germany,1,Male,235,95+ years,429,Breast cancer,1,Number,2019,20.431089726654438,26.517607408154923,15.331057402539052
+5,Prevalence,81,Germany,2,Female,235,95+ years,429,Breast cancer,1,Number,2019,5650.491654736649,6864.270575280186,4668.525197084777
+5,Prevalence,102,United States of America,1,Male,14,45-49 years,429,Breast cancer,1,Number,2017,1415.7564150224377,1623.4241287913344,1232.891533204961
+5,Prevalence,102,United States of America,2,Female,14,45-49 years,429,Breast cancer,1,Number,2017,162258.10926328073,174160.61387477187,151100.17824217348
+5,Prevalence,102,United States of America,1,Male,14,45-49 years,429,Breast cancer,1,Number,2018,1409.870163259221,1667.1574728190362,1190.5278757798296
+5,Prevalence,102,United States of America,2,Female,14,45-49 years,429,Breast cancer,1,Number,2018,160875.73386075158,181239.1962729984,143899.37177225642
+5,Prevalence,102,United States of America,1,Male,14,45-49 years,429,Breast cancer,1,Number,2019,1390.7734898460442,1812.7269847450725,1072.9745044034682
+5,Prevalence,102,United States of America,2,Female,14,45-49 years,429,Breast cancer,1,Number,2019,159077.60787271245,196908.51777409142,128423.5710521109
+5,Prevalence,102,United States of America,1,Male,15,50-54 years,429,Breast cancer,1,Number,2017,2072.831585235644,2387.3582273473257,1797.385525063522
+5,Prevalence,102,United States of America,2,Female,15,50-54 years,429,Breast cancer,1,Number,2017,225942.66553252132,244359.9612536687,209813.90174506462
+5,Prevalence,102,United States of America,1,Male,15,50-54 years,429,Breast cancer,1,Number,2018,2051.6875682853993,2414.9976003760357,1724.7032603376751
+5,Prevalence,102,United States of America,2,Female,15,50-54 years,429,Breast cancer,1,Number,2018,220700.98114655365,245833.36353143497,197858.868729607
+5,Prevalence,102,United States of America,1,Male,15,50-54 years,429,Breast cancer,1,Number,2019,2034.7491331359715,2584.7237945444185,1571.3683582254453
+5,Prevalence,102,United States of America,2,Female,15,50-54 years,429,Breast cancer,1,Number,2019,216964.89629637176,266534.14682843635,177242.6751327669
+5,Prevalence,102,United States of America,1,Male,16,55-59 years,429,Breast cancer,1,Number,2017,3044.376774844079,3457.667103577771,2685.1260945038694
+5,Prevalence,102,United States of America,2,Female,16,55-59 years,429,Breast cancer,1,Number,2017,303722.1725330502,330629.3596694851,280774.58756000345
+5,Prevalence,102,United States of America,1,Male,16,55-59 years,429,Breast cancer,1,Number,2018,3068.090220156962,3582.1432325282603,2622.311634317007
+5,Prevalence,102,United States of America,2,Female,16,55-59 years,429,Breast cancer,1,Number,2018,303652.11636165547,335241.03558438073,271214.9378221378
+5,Prevalence,102,United States of America,1,Male,16,55-59 years,429,Breast cancer,1,Number,2019,3087.742542704161,3945.5399647770673,2425.5505037964726
+5,Prevalence,102,United States of America,2,Female,16,55-59 years,429,Breast cancer,1,Number,2019,306649.1712773722,370144.4591847348,249378.62191018125
+5,Prevalence,102,United States of America,1,Male,17,60-64 years,429,Breast cancer,1,Number,2017,4377.997483362662,4989.037320066613,3796.4657977407965
+5,Prevalence,102,United States of America,2,Female,17,60-64 years,429,Breast cancer,1,Number,2017,381378.48350115324,422248.59386735153,347793.7817681635
+5,Prevalence,102,United States of America,1,Male,17,60-64 years,429,Breast cancer,1,Number,2018,4518.590443973437,5257.197516597995,3880.2195472456424
+5,Prevalence,102,United States of America,2,Female,17,60-64 years,429,Breast cancer,1,Number,2018,389803.7573026471,441552.6407628977,347464.703744175
+5,Prevalence,102,United States of America,1,Male,17,60-64 years,429,Breast cancer,1,Number,2019,4610.131116740927,5827.642862293857,3675.5927512682406
+5,Prevalence,102,United States of America,2,Female,17,60-64 years,429,Breast cancer,1,Number,2019,393083.7147378961,466376.86729822523,324259.92531961016
+5,Prevalence,102,United States of America,1,Male,19,70-74 years,429,Breast cancer,1,Number,2017,4087.4502935444552,4754.327054869426,3552.9444423307345
+5,Prevalence,102,United States of America,2,Female,19,70-74 years,429,Breast cancer,1,Number,2017,331195.4915964085,379851.43441771314,294094.1860637861
+5,Prevalence,102,United States of America,1,Male,19,70-74 years,429,Breast cancer,1,Number,2018,4370.703135731561,5186.276157400019,3732.962672822124
+5,Prevalence,102,United States of America,2,Female,19,70-74 years,429,Breast cancer,1,Number,2018,349597.32089445775,403570.5134359138,307317.48192529625
+5,Prevalence,102,United States of America,1,Male,19,70-74 years,429,Breast cancer,1,Number,2019,4619.205589957691,5844.003509981353,3735.0343535102297
+5,Prevalence,102,United States of America,2,Female,19,70-74 years,429,Breast cancer,1,Number,2019,366138.91605551617,435182.1060964755,307043.4594470791
+5,Prevalence,102,United States of America,1,Male,20,75-79 years,429,Breast cancer,1,Number,2017,2647.960137512696,3120.6650331119904,2270.210460696448
+5,Prevalence,102,United States of America,2,Female,20,75-79 years,429,Breast cancer,1,Number,2017,251471.99598831285,293305.5600979948,218942.6891362361
+5,Prevalence,102,United States of America,1,Male,20,75-79 years,429,Breast cancer,1,Number,2018,2839.359082698312,3368.1731609984217,2396.947940879432
+5,Prevalence,102,United States of America,2,Female,20,75-79 years,429,Breast cancer,1,Number,2018,266469.92612188146,310011.69672671624,230027.15162669556
+5,Prevalence,102,United States of America,1,Male,20,75-79 years,429,Breast cancer,1,Number,2019,3016.478525849761,3695.707803515305,2446.581629907094
+5,Prevalence,102,United States of America,2,Female,20,75-79 years,429,Breast cancer,1,Number,2019,282264.7827830358,335759.0483502359,237165.99081610912
+5,Prevalence,102,United States of America,1,Male,28,<1 year,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,28,<1 year,429,Breast cancer,1,Number,2017,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,28,<1 year,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,28,<1 year,429,Breast cancer,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,28,<1 year,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,28,<1 year,429,Breast cancer,1,Number,2019,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,30,80-84,429,Breast cancer,1,Number,2017,2220.133046871405,2660.400942965641,1850.6342698920403
+5,Prevalence,102,United States of America,2,Female,30,80-84,429,Breast cancer,1,Number,2017,209385.30654581898,247312.19808687424,179408.27628289378
+5,Prevalence,102,United States of America,1,Male,30,80-84,429,Breast cancer,1,Number,2018,2300.732776119184,2784.918330818167,1903.9170063177833
+5,Prevalence,102,United States of America,2,Female,30,80-84,429,Breast cancer,1,Number,2018,213375.6276037778,255407.32166286279,182935.44607836579
+5,Prevalence,102,United States of America,1,Male,30,80-84,429,Breast cancer,1,Number,2019,2384.9356139774072,2925.9279202570992,1900.0377374413074
+5,Prevalence,102,United States of America,2,Female,30,80-84,429,Breast cancer,1,Number,2019,217701.21725859365,262609.59991985717,181337.42314164896
+5,Prevalence,102,United States of America,1,Male,31,85-89,429,Breast cancer,1,Number,2017,1271.620986710126,1581.2514742985027,1033.2284727305093
+5,Prevalence,102,United States of America,2,Female,31,85-89,429,Breast cancer,1,Number,2017,138100.06098571437,168354.71577525628,114230.52507467884
+5,Prevalence,102,United States of America,1,Male,31,85-89,429,Breast cancer,1,Number,2018,1289.1326415875074,1599.5220983607567,1044.519614849652
+5,Prevalence,102,United States of America,2,Female,31,85-89,429,Breast cancer,1,Number,2018,137938.41279289423,168272.87595764032,113891.41706983697
+5,Prevalence,102,United States of America,1,Male,31,85-89,429,Breast cancer,1,Number,2019,1296.7879298927846,1623.2864515790293,1038.6068401322884
+5,Prevalence,102,United States of America,2,Female,31,85-89,429,Breast cancer,1,Number,2019,138653.58335812725,170269.6399886791,114078.89197037315
+5,Prevalence,102,United States of America,1,Male,32,90-94,429,Breast cancer,1,Number,2017,491.8591990609494,660.8155289111351,368.2892369091117
+5,Prevalence,102,United States of America,2,Female,32,90-94,429,Breast cancer,1,Number,2017,69292.68728556599,91298.59084174606,52766.618412657124
+5,Prevalence,102,United States of America,1,Male,32,90-94,429,Breast cancer,1,Number,2018,507.53369280027437,680.4287883587053,382.13364286095066
+5,Prevalence,102,United States of America,2,Female,32,90-94,429,Breast cancer,1,Number,2018,70655.06970130271,93244.81072234789,54063.89948059792
+5,Prevalence,102,United States of America,1,Male,32,90-94,429,Breast cancer,1,Number,2019,515.8263044478305,693.4018697777184,387.0558485704596
+5,Prevalence,102,United States of America,2,Female,32,90-94,429,Breast cancer,1,Number,2019,71236.45277513111,94250.41046401903,54621.125959023695
+5,Prevalence,102,United States of America,1,Male,232,65-74 years,429,Breast cancer,1,Number,2017,8843.86093045109,10063.124170980194,7825.501468204545
+5,Prevalence,102,United States of America,2,Female,232,65-74 years,429,Breast cancer,1,Number,2017,717163.3356522114,799488.6815653888,646777.737971264
+5,Prevalence,102,United States of America,1,Male,232,65-74 years,429,Breast cancer,1,Number,2018,9245.237318968535,10773.03850775092,8059.964671429525
+5,Prevalence,102,United States of America,2,Female,232,65-74 years,429,Breast cancer,1,Number,2018,742504.2189582476,839622.4135399896,657814.0341053276
+5,Prevalence,102,United States of America,1,Male,232,65-74 years,429,Breast cancer,1,Number,2019,9684.70764569036,12142.66784618904,7841.7672630111
+5,Prevalence,102,United States of America,2,Female,232,65-74 years,429,Breast cancer,1,Number,2019,774739.7745365229,910086.7412693708,654178.7861858646
