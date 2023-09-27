@@ -7,6 +7,7 @@ source("functions.R")
 
 # read data
 
+
 # Pop german females
 pop_ger <- read_table("pop_germ.txt", 
                   skip = 2, 
@@ -85,6 +86,39 @@ alz_counts <-
                          age == "5-9" ~ 5,
                          TRUE ~ suppressWarnings(as.integer(substr(age,1,2))))) |>     mutate(val = ifelse(val == 0, 0.000001, val)) |> 
   arrange(country, sex, age)
+alz_prev<-
+  read_csv("IHME-GBD_2019_DATA-5b3d4823-1/IHME-GBD_2019_DATA-5b3d4823-1.csv") |> 
+  filter(metric_name == "Percent") |> 
+  select(country = location_name,
+         sex = sex_name,
+         age = age_name,
+         val) |>   
+  mutate(age = str_remove(age, " years$")) %>%
+  mutate(age = str_remove(age, " year$")) %>% 
+  mutate(age = case_when(age == "<1" ~ 0,
+                         age == "95+" ~ 95,
+                         age == "1-4" ~ 1,
+                         age == "5-9" ~ 5,
+                         TRUE ~ suppressWarnings(as.integer(substr(age,1,2))))) |>     mutate(val = ifelse(val == 0, 0.000001, val)) |> 
+  arrange(country, sex, age)
+pop_gbd <- pop |> 
+  mutate(age2 = age - age %% 5,
+         age2 = if_else(between(age,1,4),1,age2),
+         age2 = if_else(age>95,95,age2)) |> 
+  group_by(country, sex, age2) |> 
+  summarize(pop = sum(pop), .groups = "drop") |> 
+  rename(age = age2)
+
+alz_counts <- pop_gbd |> 
+  left_join(alz_prev,
+            by = join_by(country, sex, age)) |> 
+  mutate(count = val * pop)
+
+# sanity check, very high closeout values I must say
+# 60% in 95+, really? I don't believe it. 
+  alz_prev|> 
+    ggplot(aes(x=age,y=val,color=sex, linetype=country))+
+    geom_step()
 
 groups <- alz_counts |> 
   select(country, sex) |> 
@@ -103,9 +137,10 @@ for (i in 1:nrow(groups)){
               by = join_by(country, sex)) |> 
     pull(pop)
    counts <- pclm( countsi$age,  
-                   countsi$val, 
+                   countsi$count, 
                    offset = offi, 
-                   nlast = 16)$fitted * offi
+                   nlast = 16,
+                   control = list(lambda = 1e5, deg = 3))$fitted * offi
    chunki <- cross_join(tibble(count = counts, age = 0:110), meta)
    countsL[[i]] <- chunki
 }
@@ -117,18 +152,37 @@ dec_data <- left_join(mort,
                       alz_counts1,
                       by = join_by(country, sex, age)) |> 
   mutate(mx = deaths / pop,
-         prev = count / pop)
+         prev = count / pop) |> 
+  filter(age <= 100)
 
 dec_data |> 
   ggplot(aes(x = age, y = prev, color = sex, linetype = country)) +
-  geom_line()
+  geom_line() 
 
-# these prevalence age patterns seem to reach values that are too high
+# these prevalence age patterns seem to reach values that are too high,
+dec_data <- 
+dec_data |> 
+  mutate(prev = if_else(prev < 0.0001,0,prev))
+
+dec_data_expanded <- list()
+for (i in 1:nrow(groups)){
+  meta <- groups[i, ]
+  chunki <- dec_data |> 
+    right_join(meta, 
+               by = join_by(country, sex))
+  ratesi <- sully_derive_rates(mx_all = chunki$mx,
+                               pux = chunki$prev,
+                               R_guess = 2.5)
+  dec_data_expanded[[i]] <- 
+    left_join(chunki, ratesi,by = join_by(age))
+}
+dec_data_expanded <- bind_rows(dec_data_expanded)
 
 # now to models
 # females
-mx_all  <- females$mx
-pux     <- res$f
+mx_all  <- dec_data |> 
+  filter()mx
+pux     <- dec_data$prev
 
 # males
 mx_all2 <- males$mx
