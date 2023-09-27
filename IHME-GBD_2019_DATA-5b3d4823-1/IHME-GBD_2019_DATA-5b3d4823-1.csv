@@ -1,0 +1,253 @@
+measure_id,measure_name,location_id,location_name,sex_id,sex_name,age_id,age_name,cause_id,cause_name,metric_id,metric_name,year,val,upper,lower
+5,Prevalence,81,Germany,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2018,2078.8037410394013,2970.568380180546,1231.4953464066798
+5,Prevalence,81,Germany,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2018,2569.243957265841,3614.09057600603,1591.0764282038176
+5,Prevalence,81,Germany,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0007387185832761499,0.00105642683850961,0.0004374488631674793
+5,Prevalence,81,Germany,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0009160141380315292,0.0012888353170840007,0.0005675721682294224
+5,Prevalence,81,Germany,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,3,Rate,2018,72.51900454993755,103.62818655045446,42.96067727136164
+5,Prevalence,81,Germany,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,3,Rate,2018,91.44440312086499,128.6325319995367,56.629513085090615
+5,Prevalence,81,Germany,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2018,6306.982857119999,8659.393381035745,4257.788316166612
+5,Prevalence,81,Germany,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2018,7157.641482075056,9568.951503826143,5017.79964655952
+5,Prevalence,81,Germany,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.001813565692221499,0.0024938493444706376,0.001222424254690961
+5,Prevalence,81,Germany,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0020837157773100287,0.002785906982267145,0.0014599449364809459
+5,Prevalence,81,Germany,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,3,Rate,2018,179.28933193271124,246.16157826967458,121.03664145125028
+5,Prevalence,81,Germany,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,3,Rate,2018,207.99174411260148,278.0612744566675,145.81072588074701
+5,Prevalence,81,Germany,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2018,11172.689445212642,14439.091668265419,7976.834636866374
+5,Prevalence,81,Germany,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2018,12267.858092590648,15700.339548747655,9015.485579785469
+5,Prevalence,81,Germany,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.003381861578688689,0.004371060523609435,0.002414228497050978
+5,Prevalence,81,Germany,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.003699064765514165,0.004735199416096232,0.00271879880975384
+5,Prevalence,81,Germany,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,3,Rate,2018,336.0060575890975,434.23942734757634,239.89432191029798
+5,Prevalence,81,Germany,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,3,Rate,2018,369.2827116770926,472.6060506287026,271.3809482357528
+5,Prevalence,81,Germany,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2018,17140.08923990079,21849.221423773975,12878.536512243549
+5,Prevalence,81,Germany,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2018,19935.180185258574,25459.64754410662,15210.765208325269
+5,Prevalence,81,Germany,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.006347264126448366,0.008089050199843816,0.004770141185982023
+5,Prevalence,81,Germany,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.007109923002398015,0.009079017170936385,0.0054253896768279904
+5,Prevalence,81,Germany,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,3,Rate,2018,632.6488410676793,806.4651483729219,475.3529042399451
+5,Prevalence,81,Germany,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,3,Rate,2018,710.1417993463657,906.937371504959,541.8461270022925
+5,Prevalence,81,Germany,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,45604.30772768942,57914.01009409777,34835.23387242458
+5,Prevalence,81,Germany,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,66291.95795848378,84315.83266690744,51987.01469386611
+5,Prevalence,81,Germany,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.026948384404959575,0.034220574552015104,0.0205851003446431
+5,Prevalence,81,Germany,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.034440477447705974,0.043801349308254287,0.027009272013359953
+5,Prevalence,81,Germany,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,3,Rate,2018,2692.8013794426606,3419.6534064643733,2056.918973203001
+5,Prevalence,81,Germany,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,3,Rate,2018,3442.5789763639477,4378.569012782785,2699.715159131506
+5,Prevalence,81,Germany,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2018,105328.3940725975,131152.6588598362,82058.04436462339
+5,Prevalence,81,Germany,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2018,168284.06199583437,209300.38902332683,134381.28837646596
+5,Prevalence,81,Germany,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.05761797494696599,0.07173988248976278,0.04488423540322109
+5,Prevalence,81,Germany,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0743454262857333,0.0924724688394272,0.0593573153298719
+5,Prevalence,81,Germany,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,3,Rate,2018,5759.25226617168,7171.297487288513,4486.852592082996
+5,Prevalence,81,Germany,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,3,Rate,2018,7432.49220100914,9244.033514727987,5935.130552317943
+5,Prevalence,81,Germany,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2018,140889.5521891292,176656.33426832262,109768.73083266914
+5,Prevalence,81,Germany,2,Female,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2018,264398.97560445085,330488.51558412326,210843.27815620255
+5,Prevalence,81,Germany,1,Male,30,80-84,543,Alzheimer's disease and other dementias,2,Percent,2018,0.10944785618141688,0.1372242817298478,0.08528031889681535
+5,Prevalence,81,Germany,2,Female,30,80-84,543,Alzheimer's disease and other dementias,2,Percent,2018,0.1455951168054366,0.18199050320755414,0.11611693790297747
+5,Prevalence,81,Germany,1,Male,30,80-84,543,Alzheimer's disease and other dementias,3,Rate,2018,10941.444691786584,13719.083358686074,8524.610083798161
+5,Prevalence,81,Germany,2,Female,30,80-84,543,Alzheimer's disease and other dementias,3,Rate,2018,14556.850696054797,18195.501579083553,11608.267820894402
+5,Prevalence,81,Germany,1,Male,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2018,94486.41684459033,117528.43767351675,74032.0697836274
+5,Prevalence,81,Germany,2,Female,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2018,229216.85392116915,283654.87697362993,181043.64085856974
+5,Prevalence,81,Germany,1,Male,31,85-89,543,Alzheimer's disease and other dementias,2,Percent,2018,0.1726134057775483,0.21471575830809728,0.13523166611679688
+5,Prevalence,81,Germany,2,Female,31,85-89,543,Alzheimer's disease and other dementias,2,Percent,2018,0.23948346912979585,0.29635447593038516,0.18914920088667533
+5,Prevalence,81,Germany,1,Male,31,85-89,543,Alzheimer's disease and other dementias,3,Rate,2018,17256.855295081186,21465.214892472304,13521.104494339337
+5,Prevalence,81,Germany,2,Female,31,85-89,543,Alzheimer's disease and other dementias,3,Rate,2018,23945.524363563956,29632.484048279217,18913.028596658667
+5,Prevalence,81,Germany,1,Male,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2018,41085.11478120588,50556.60369099122,32293.085372647718
+5,Prevalence,81,Germany,2,Female,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2018,154620.98986153048,186275.63121619236,124551.69238754058
+5,Prevalence,81,Germany,1,Male,32,90-94,543,Alzheimer's disease and other dementias,2,Percent,2018,0.24852966086305286,0.30579987431412975,0.19536639329123567
+5,Prevalence,81,Germany,2,Female,32,90-94,543,Alzheimer's disease and other dementias,2,Percent,2018,0.34970835850506027,0.4213719247581464,0.2816779004229765
+5,Prevalence,81,Germany,1,Male,32,90-94,543,Alzheimer's disease and other dementias,3,Rate,2018,24847.15053259779,30575.247240189845,19529.972295057534
+5,Prevalence,81,Germany,2,Female,32,90-94,543,Alzheimer's disease and other dementias,3,Rate,2018,34968.02054747936,42126.8167128912,28167.754860004607
+5,Prevalence,81,Germany,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,74376.4096596885,92447.74452978985,58512.33917938052
+5,Prevalence,81,Germany,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,104838.3026622445,130042.54057818203,84596.77294977423
+5,Prevalence,81,Germany,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.018604636462857167,0.023132511215857614,0.014630688049996595
+5,Prevalence,81,Germany,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.02356896255834145,0.02924303721764079,0.01901872094604184
+5,Prevalence,81,Germany,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,3,Rate,2018,1858.114983920132,2309.5836452230055,1461.7894930783525
+5,Prevalence,81,Germany,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,3,Rate,2018,2355.4462380567866,2921.720451532424,1900.6712769688006
+5,Prevalence,81,Germany,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,81,Germany,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2018,257.99285405216494,419.00104171366155,125.44843469223991
+5,Prevalence,81,Germany,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2018,333.49639746091094,521.0911275601964,176.06060701773328
+5,Prevalence,81,Germany,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.00010538387858984727,0.00017062033601401887,5.113684094656928e-05
+5,Prevalence,81,Germany,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.00013641714323380086,0.00021299144422693325,7.201658697972177e-05
+5,Prevalence,81,Germany,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,3,Rate,2018,10.279630944685017,16.69494331569402,4.998447014985552
+5,Prevalence,81,Germany,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,3,Rate,2018,13.615561086503723,21.27443694429279,7.1879755464460295
+5,Prevalence,81,Germany,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2018,11793.283111973245,14428.755029619619,9450.171002080442
+5,Prevalence,81,Germany,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2018,70606.98893529676,83667.75989131814,57921.79144067127
+5,Prevalence,81,Germany,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.3571107358123844,0.4369110889874535,0.28612840869793443
+5,Prevalence,81,Germany,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.4855639818199517,0.5753848827971056,0.39833082521817836
+5,Prevalence,81,Germany,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,3,Rate,2018,35705.39013372046,43684.555232410545,28611.374733901128
+5,Prevalence,81,Germany,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,3,Rate,2018,48554.20249728511,57535.68332987595,39830.99170526961
+5,Prevalence,102,United States of America,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,392022.71091636026,456803.58088957344,326741.3559138266
+5,Prevalence,102,United States of America,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,463106.7917150307,535868.5210124028,395873.0525973999
+5,Prevalence,102,United States of America,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.02761490162068344,0.03217506328654209,0.02301343897025718
+5,Prevalence,102,United States of America,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.028779236084660015,0.03330138133647682,0.02460197081896037
+5,Prevalence,102,United States of America,1,Male,232,65-74 years,543,Alzheimer's disease and other dementias,3,Rate,2018,2759.485315127893,3215.4840478911865,2299.963620427974
+5,Prevalence,102,United States of America,2,Female,232,65-74 years,543,Alzheimer's disease and other dementias,3,Rate,2018,2876.7102532617687,3328.6889684510884,2459.0701103294014
+5,Prevalence,102,United States of America,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2018,109658.5551677015,126363.27997300468,92480.22644532508
+5,Prevalence,102,United States of America,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,1,Number,2018,335861.1253254312,380113.9720089097,285818.7888925362
+5,Prevalence,102,United States of America,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.4985847925958374,0.5745354940366347,0.4204981996010612
+5,Prevalence,102,United States of America,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.6053783140086733,0.6851408807388197,0.5151843735788468
+5,Prevalence,102,United States of America,1,Male,235,95+ years,543,Alzheimer's disease and other dementias,3,Rate,2018,49855.88640623082,57450.632306966894,42045.81810721001
+5,Prevalence,102,United States of America,2,Female,235,95+ years,543,Alzheimer's disease and other dementias,3,Rate,2018,60535.67782590164,68511.819950461,51516.036886445385
+5,Prevalence,102,United States of America,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,9,20-24 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,9,20-24 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,10,25-29 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,10,25-29 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,11,30-34 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,11,30-34 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,12,35-39 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,12,35-39 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2018,2045.3409652512366,2902.165026726367,1148.7917484117872
+5,Prevalence,102,United States of America,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,1,Number,2018,2666.628835243824,3674.47412561607,1550.485268524733
+5,Prevalence,102,United States of America,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.00021464414519606082,0.00030455610620910926,0.00012053903100017136
+5,Prevalence,102,United States of America,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.00026991323038186706,0.00037199613909005066,0.00015691996792253454
+5,Prevalence,102,United States of America,1,Male,13,40-44 years,543,Alzheimer's disease and other dementias,3,Rate,2018,21.01439068131213,29.817634677735633,11.802999608736428
+5,Prevalence,102,United States of America,2,Female,13,40-44 years,543,Alzheimer's disease and other dementias,3,Rate,2018,26.92783885064548,37.10514407094413,15.656928665633467
+5,Prevalence,102,United States of America,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2018,13020.098049655004,16973.407357313346,8402.588669616107
+5,Prevalence,102,United States of America,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,1,Number,2018,16457.538517749686,20980.151722719285,11089.719974519781
+5,Prevalence,102,United States of America,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0012761059577947507,0.0016649653155246535,0.0008228737455970479
+5,Prevalence,102,United States of America,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.001555913992172313,0.001982828981893218,0.0010481271485167744
+5,Prevalence,102,United States of America,1,Male,14,45-49 years,543,Alzheimer's disease and other dementias,3,Rate,2018,125.58632930089347,163.71826983209579,81.04779730674346
+5,Prevalence,102,United States of America,2,Female,14,45-49 years,543,Alzheimer's disease and other dementias,3,Rate,2018,155.21889028620348,197.8738111367304,104.59243502138685
+5,Prevalence,102,United States of America,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2018,23124.666386197383,28499.484019231706,16186.893903036736
+5,Prevalence,102,United States of America,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,1,Number,2018,26421.479785340645,32155.09951694518,19284.749478929276
+5,Prevalence,102,United States of America,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.002234072438973869,0.0027555733618622636,0.0015618561434911518
+5,Prevalence,102,United States of America,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0024627841559554647,0.002999673052146616,0.0017982918884438081
+5,Prevalence,102,United States of America,1,Male,15,50-54 years,543,Alzheimer's disease and other dementias,3,Rate,2018,221.2260644979956,272.64517396719566,154.8546809199728
+5,Prevalence,102,United States of America,2,Female,15,50-54 years,543,Alzheimer's disease and other dementias,3,Rate,2018,245.6670339041218,298.97825509389565,179.3096844901616
+5,Prevalence,102,United States of America,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2018,39763.00491895202,48208.32670325457,29442.643067029283
+5,Prevalence,102,United States of America,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,1,Number,2018,40584.035365542084,48170.34650204368,31245.47144315274
+5,Prevalence,102,United States of America,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0037009376574652,0.0044864105017396825,0.0027395712768352
+5,Prevalence,102,United States of America,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0035765907430410936,0.004244165712007926,0.002752907198472928
+5,Prevalence,102,United States of America,1,Male,16,55-59 years,543,Alzheimer's disease and other dementias,3,Rate,2018,368.2220303255664,446.4292367604713,272.6511698597808
+5,Prevalence,102,United States of America,2,Female,16,55-59 years,543,Alzheimer's disease and other dementias,3,Rate,2018,356.9373530366933,423.65910192110204,274.8045080004961
+5,Prevalence,102,United States of America,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2018,73132.58550291952,88570.43259507387,58493.21552329281
+5,Prevalence,102,United States of America,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,1,Number,2018,73147.09728322832,86801.12519357039,59763.706800083746
+5,Prevalence,102,United States of America,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.007483230887417378,0.0090691900175696,0.005983329002974631
+5,Prevalence,102,United States of America,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.006914524630842939,0.008204886195381431,0.0056497579480233396
+5,Prevalence,102,United States of America,1,Male,17,60-64 years,543,Alzheimer's disease and other dementias,3,Rate,2018,746.6073046720405,904.2115973160129,597.1546292685496
+5,Prevalence,102,United States of America,2,Female,17,60-64 years,543,Alzheimer's disease and other dementias,3,Rate,2018,690.6730000350129,819.597711604669,564.3037140489658
+5,Prevalence,102,United States of America,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,248683.006933923,294756.505395003,203406.412342676
+5,Prevalence,102,United States of America,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,1,Number,2018,303373.4308022468,357011.5091980331,257276.48096106513
+5,Prevalence,102,United States of America,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.040562268255839355,0.048071416884869086,0.033179483014224756
+5,Prevalence,102,United States of America,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.04291546883358737,0.05050559821054505,0.03639568399237965
+5,Prevalence,102,United States of America,1,Male,19,70-74 years,543,Alzheimer's disease and other dementias,3,Rate,2018,4054.6113470219684,4805.809154867886,3316.406527772047
+5,Prevalence,102,United States of America,2,Female,19,70-74 years,543,Alzheimer's disease and other dementias,3,Rate,2018,4290.493370485196,5049.076016151019,3638.561996105545
+5,Prevalence,102,United States of America,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2018,304581.5131366231,353266.3450152124,254104.11406609585
+5,Prevalence,102,United States of America,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,1,Number,2018,417109.4108123805,479286.01345639856,357915.2488191145
+5,Prevalence,102,United States of America,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.07562921112284181,0.08772008955644049,0.06309854895004346
+5,Prevalence,102,United States of America,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.08374402647060894,0.09623152656004476,0.07185672040426982
+5,Prevalence,102,United States of America,1,Male,20,75-79 years,543,Alzheimer's disease and other dementias,3,Rate,2018,7561.461443246699,8770.09841969961,6308.322659817119
+5,Prevalence,102,United States of America,2,Female,20,75-79 years,543,Alzheimer's disease and other dementias,3,Rate,2018,8373.358511077784,9621.536978030123,7185.051732846448
+5,Prevalence,102,United States of America,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,28,<1 year,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,28,<1 year,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2018,337954.3969960039,394811.3057193995,282289.2140646142
+5,Prevalence,102,United States of America,2,Female,30,80-84,543,Alzheimer's disease and other dementias,1,Number,2018,534831.5646919374,624545.3763697908,458091.4680186253
+5,Prevalence,102,United States of America,1,Male,30,80-84,543,Alzheimer's disease and other dementias,2,Percent,2018,0.13455245147869496,0.1571862803398756,0.11238723648273534
+5,Prevalence,102,United States of America,2,Female,30,80-84,543,Alzheimer's disease and other dementias,2,Percent,2018,0.15621364774495128,0.18241549146907376,0.13379990824470744
+5,Prevalence,102,United States of America,1,Male,30,80-84,543,Alzheimer's disease and other dementias,3,Rate,2018,13453.703037141548,15717.132577854023,11237.715178057906
+5,Prevalence,102,United States of America,2,Female,30,80-84,543,Alzheimer's disease and other dementias,3,Rate,2018,15620.14322687218,18240.300076896314,13378.893120454848
+5,Prevalence,102,United States of America,1,Male,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2018,306029.4366983055,356262.4234410303,257220.3166807095
+5,Prevalence,102,United States of America,2,Female,31,85-89,543,Alzheimer's disease and other dementias,1,Number,2018,594690.0180592749,689398.0725793709,510489.4057240908
+5,Prevalence,102,United States of America,1,Male,31,85-89,543,Alzheimer's disease and other dementias,2,Percent,2018,0.20913562500570526,0.2434684588917749,0.17578070986648037
+5,Prevalence,102,United States of America,2,Female,31,85-89,543,Alzheimer's disease and other dementias,2,Percent,2018,0.25128341869811505,0.2912949876721153,0.2157051643041651
+5,Prevalence,102,United States of America,1,Male,31,85-89,543,Alzheimer's disease and other dementias,3,Rate,2018,20911.729114337773,24344.27018849451,17576.48428583654
+5,Prevalence,102,United States of America,2,Female,31,85-89,543,Alzheimer's disease and other dementias,3,Rate,2018,25126.852086399438,29128.458309895705,21569.20647695261
+5,Prevalence,102,United States of America,1,Male,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2018,199019.04276319046,230227.1350416322,167929.5124222236
+5,Prevalence,102,United States of America,2,Female,32,90-94,543,Alzheimer's disease and other dementias,1,Number,2018,497078.59806936735,570716.4331667492,428462.9686437348
+5,Prevalence,102,United States of America,1,Male,32,90-94,543,Alzheimer's disease and other dementias,2,Percent,2018,0.30234975570326966,0.34976051411560394,0.25511789800452256
+5,Prevalence,102,United States of America,2,Female,32,90-94,543,Alzheimer's disease and other dementias,2,Percent,2018,0.3737753786306448,0.42914826343172263,0.32219502618540974
+5,Prevalence,102,United States of America,1,Male,32,90-94,543,Alzheimer's disease and other dementias,3,Rate,2018,30232.697654485695,34973.474241126605,25509.931641904644
+5,Prevalence,102,United States of America,2,Female,32,90-94,543,Alzheimer's disease and other dementias,3,Rate,2018,37375.64658142569,42912.52085102957,32216.395055942325
+5,Prevalence,102,United States of America,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,5,1-4 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,5,1-4 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,6,5-9 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,6,5-9 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,7,10-14 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,7,10-14 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,1,Number,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,2,Percent,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,1,Male,8,15-19 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
+5,Prevalence,102,United States of America,2,Female,8,15-19 years,543,Alzheimer's disease and other dementias,3,Rate,2018,0.0,0.0,0.0
