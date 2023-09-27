@@ -178,30 +178,47 @@ for (i in 1:nrow(groups)){
 }
 dec_data_expanded <- bind_rows(dec_data_expanded)
 
-# now to models
-# females
-mx_all  <- dec_data |> 
-  filter()mx
-pux     <- dec_data$prev
+# check everything
+dec_data_expanded |> 
+  select(-c(pop,deaths,count)) |> 
+  pivot_longer(mx:phux,names_to = "measure",values_to="value") |> 
+  ggplot(aes(x = age, y = value, color = measure)) +
+  geom_line() +
+  facet_wrap(sex~country) +
+  theme_minimal()
 
-# males
-mx_all2 <- males$mx
-pux2    <- res$m
-age     <- res$age
-
-
-
-# good
-sully_normal(mx_all, pux)
-p1 <- sully_derive_rates(mx_all, pux, 1) # exact correspondence only have to find the R value
-sully_rates(p1$qhx, p1$qux, p1$phux, p0 = pux[1])
-
-# good
-sully_normal(mx_all2, pux2)
-p2 <- sully_derive_rates(mx_all2, pux2, 1)
-sully_rates(p2$qhx, p2$qux, p2$phux, p0 = pux[1])
+# just check rates
+dec_data_expanded |> 
+  select(-c(pop,deaths,count)) |> 
+  pivot_longer(c(mx,qux,qhx),names_to = "measure",values_to="value") |> 
+  ggplot(aes(x = age, y = value, color = measure, linetype = sex)) +
+  geom_line() +
+  facet_wrap(~country) +
+  theme_minimal() +
+  scale_y_log10()
 
 
+dec_data_expanded |> 
+  group_by(country, sex) |> 
+  summarize(HLE = sully_normal(mx, prev, type = 'h'),
+            ULE = sully_normal(mx, prev, type = "u"))
+
+dec_data_expanded |> 
+  group_by(country, sex) |> 
+  summarize(HLE = sully_rates(qhx = qhx, 
+                              qux = qux, 
+                              phux = phux, 
+                              p0 = 0, 
+                              type = 'h'),
+            ULE = sully_rates(qhx = qhx, 
+                              qux = qux, 
+                              phux = phux, 
+                              p0 = 0, 
+                              type = 'u'))
+# good match
+
+dec_results <- list()
+for (i)
 
 ccr <- sully_rates_decomp(mx_all,
                           mx_all2,
