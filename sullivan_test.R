@@ -1,107 +1,129 @@
 
 source("functions.R")
 
+# TR: note I'm keeping for now all ages 0-110, and graduating to these too,
+# I stopped the exercise on seeing the age patterns of prevalence, 
+# which are impossible.
+
 # read data
-# make 99 OA
+
 # Pop german females
-pop <- read_table("pop_germ.txt", skip = 2) %>% 
+pop_ger <- read_table("pop_germ.txt", 
+                  skip = 2, 
+                  show_col_types = FALSE) %>% 
   filter(Year == 2018) %>% 
-  dplyr::select(Age, Female) %>% 
-  mutate(Age = parse_number(Age)) %>%
-  mutate(Age = ifelse(Age > 98, 100, Age)) %>% 
-  group_by(Age) %>% 
-  summarise(Female = sum(Female), .groups = "drop")
+  dplyr::select(age = Age, Female, Male) %>% 
+  pivot_longer(c(Female,Male), names_to = "sex", values_to = "pop") |> 
+  mutate(age = parse_number(age)) %>%
+  # mutate(age = if_else(age > 99, 100, age)) %>% 
+  group_by(sex, age) %>% 
+  summarise(pop = sum(pop), .groups = "drop")|> 
+    mutate(country = "Germany")
 
 # Pop USA males 
-pop2 <- read_table("pop_usa.txt", skip = 2) %>% 
+pop_usa <- read_table("pop_usa.txt", 
+                   skip = 2, 
+                   show_col_types = FALSE) %>% 
   filter(Year == 2018) %>% 
-  dplyr::select(Age, Male) %>% 
-  mutate(Age = parse_number(Age)) %>%
-  mutate(Age = ifelse(Age > 98, 100, Age)) %>% 
-  group_by(Age) %>% 
-  summarise(Male = sum(Male), .groups = "drop")
+  dplyr::select(age = Age, Female, Male) %>% 
+  pivot_longer(c(Female,Male),names_to = "sex", values_to = "pop") |> 
+  mutate(age = parse_number(age)) %>%
+  # mutate(age = if_else(age > 99, 100, age)) %>% 
+  group_by(sex,age) %>% 
+  summarise(pop = sum(pop), .groups = "drop") |> 
+  mutate(country = "United States of America")
 
+pop <- bind_rows(pop_ger, pop_usa)
 # deaths german females from all causes
-dx_ger <- read_table("germany_deaths.txt", skip = 2) %>% 
+dx_ger <- read_table("germany_deaths.txt", 
+                     skip = 2,
+                     show_col_types = FALSE) %>% 
   filter(Year == 2018) %>% 
-  dplyr::select(Age, Female) %>% 
-  mutate(Age = parse_number(Age)) %>%
-  mutate(Age = ifelse(Age > 98, 100, Age)) %>% 
-  group_by(Age) %>% 
-  summarise(Female = sum(Female), .groups = "drop")
+  dplyr::select(age = Age, Female, Male) %>% 
+  pivot_longer(c(Female,Male),names_to = "sex",values_to = "deaths") |> 
+  mutate(age = parse_number(age)) %>%
+  # mutate(age = if_else(age > 99, 100, age)) %>% 
+  group_by(sex, age) %>% 
+  summarise(deaths = sum(deaths), .groups = "drop") |> 
+  mutate(country = "Germany")
 
 # deaths USA males from all causes
-dx_usa <- read_table("usa_deaths.txt", skip = 2) %>% 
+dx_usa <- read_table("usa_deaths.txt", 
+                     skip = 2,
+                     show_col_types = FALSE) %>% 
   filter(Year == 2018) %>% 
-  dplyr::select(Age, Male) %>% 
-  mutate(Age = parse_number(Age)) %>%
-  mutate(Age = ifelse(Age > 98, 100, Age)) %>% 
-  group_by(Age) %>% 
-  summarise(Male = sum(Male), .groups = "drop")
+  dplyr::select(age = Age, Female, Male) %>% 
+  pivot_longer(c(Female,Male),
+               names_to = "sex", 
+               values_to = "deaths") |> 
+  mutate(age = parse_number(age)) %>%
+  #mutate(age = ifelse(age > 99, 100, age)) %>% 
+  group_by(sex, age) %>% 
+  summarise(deaths = sum(deaths), .groups = "drop") |> 
+  mutate(country = "United States of America")
 
+deaths <-
+  bind_rows(dx_ger, dx_usa)
 
-# prevalence counts germany females for breast cancer
-y <- read_csv("overall.csv") %>% 
+mort <- left_join(pop, deaths,by = join_by(sex, age, country)) |> 
+  relocate(country, .before = 1)
+
+# prevalence counts for usa and germany males and female 
+# alzheimer's disease and other dementias
+alz_counts <-
+  read_csv("overall.csv", show_col_types = FALSE) %>% 
   dplyr::select(year, contains("name"), val) %>%
   set_names(str_remove(names(.), "_name$")) %>%
-  filter(year == 2018, sex == "Female", cause == "Breast cancer",
-         location == "Germany") %>% 
-  dplyr::select(age, val) %>% 
+  filter(year == 2018, 
+         cause == "Alzheimer's disease and other dementias") %>% 
+  dplyr::select(country = location, sex, age, val) %>% 
   mutate(age = str_remove(age, " years$")) %>%
-  mutate(age = str_remove(age, " year$")) %>%
-  mutate(age = factor(age, levels = c("<1", "1-4", "5-9", "10-14", "15-19", "20-24",
-                                      "25-29", "30-34", "35-39", "40-44", "45-49", 
-                                      "50-54", "55-59", "60-64", "65-74", "70-74", 
-                                      "75-79", "80-84", "85-89", "90-94", "95+"))) %>% 
-  arrange(age) %>% 
-  mutate(age = as.character(age)) %>% 
-  mutate(age = ifelse(age == "<1", "0", age)) %>%
-  separate(age, c("one", "two"), sep = "-") %>%
-  dplyr::select(age = one, val) %>% 
-  mutate(age = ifelse(age == "95+", "95", age)) %>% 
-  mutate(age = as.numeric(age)) %>% 
-  mutate(val = ifelse(val == 0, 0.000001, val))# pclm requirement
+  mutate(age = str_remove(age, " year$")) %>% 
+  mutate(age = case_when(age == "<1" ~ 0,
+                         age == "95+" ~ 95,
+                         age == "1-4" ~ 1,
+                         age == "5-9" ~ 5,
+                         TRUE ~ suppressWarnings(as.integer(substr(age,1,2))))) |>     mutate(val = ifelse(val == 0, 0.000001, val)) |> 
+  arrange(country, sex, age)
 
-
-# prevalence counts USA males for Alzheimer's disease and other dementias
-y2 <- read_csv("overall.csv") %>%
-  dplyr::select(year, contains("name"), val) %>% 
-  set_names(str_remove(names(.), "_name$")) %>% 
-  filter(year == 2018, sex == "Male", cause == "Alzheimer's disease and other dementias",
-         location == "United States of America") %>% 
-  dplyr::select(age, val) %>% 
-  mutate(age = str_remove(age, " years$")) %>%
-  mutate(age = str_remove(age, " year$")) %>%
-  mutate(age = factor(age, levels = c("<1", "1-4", "5-9", "10-14", "15-19", "20-24",
-                                      "25-29", "30-34", "35-39", "40-44", "45-49", 
-                                      "50-54", "55-59", "60-64", "65-74", "70-74", 
-                                      "75-79", "80-84", "85-89", "90-94", "95+"))) %>% 
-  arrange(age) %>% 
-  mutate(age = as.character(age)) %>% 
-  mutate(age = ifelse(age == "<1", "0", age)) %>%
-  separate(age, c("one", "two"), sep = "-") %>%
-  dplyr::select(age = one, val) %>% 
-  mutate(age = ifelse(age == "95+", "95", age)) %>% 
-  mutate(age = as.numeric(age)) %>% 
-  mutate(val = ifelse(val == 0, 0.000001, val))
-
-
-
+groups <- alz_counts |> 
+  select(country, sex) |> 
+  distinct()
 # graduate to single age intervals
-z  <- pclm( y$age,  y$val, nlast = 5)$fitted
-z1 <- pclm(y2$age, y2$val, nlast = 5)$fitted
+countsL <- list()
+for (i in 1:nrow(groups)){
+  meta <- groups[i, ]
+  countsi <- 
+    meta |> 
+    left_join(alz_counts,
+              by = join_by(country, sex))
+  offi <- 
+    meta |> 
+    left_join(mort,
+              by = join_by(country, sex)) |> 
+    pull(pop)
+   counts <- pclm( countsi$age,  
+                   countsi$val, 
+                   offset = offi, 
+                   nlast = 16)$fitted * offi
+   chunki <- cross_join(tibble(count = counts, age = 0:110), meta)
+   countsL[[i]] <- chunki
+}
+alz_counts1 <- bind_rows(countsL)
 
 
 # combine results, calculate the share with disability
-res <-  tibble(f = z,
-               m = z1,
-               age = 0:99, 
-               pop_f = pop$Female, 
-               pop_m = pop2$Male) %>% 
-  mutate(m = m / pop_m,
-         f = f / pop_f)
+dec_data <- left_join(mort, 
+                      alz_counts1,
+                      by = join_by(country, sex, age)) |> 
+  mutate(mx = deaths / pop,
+         prev = count / pop)
 
+dec_data |> 
+  ggplot(aes(x = age, y = prev, color = sex, linetype = country)) +
+  geom_line()
 
+# these prevalence age patterns seem to reach values that are too high
 
 # now to models
 # females
