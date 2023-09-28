@@ -113,6 +113,19 @@ l^u(0) &= \pi(0)
 
 Now we are ready to decompose! For this, we will recommend a lifetable response experiment approach to decomposition (@caswell1989analysis), and that will simply require citing some other work should the sensitivity calculation for this setup of a multistate model (in preparation). For the present, we will set up the decomposition using the @horiuchi2008decomposition approach. Either way, no new innovation is required to proceed to the decomposition now that expectancy is redefined in terms of incidence. In the final paper, we will show how expectancy results are the same as standard Sullivan expectancies, but how decomposition results are different from previous Sullivan decompositions. The lessons depend on whether we look at healthy, unhealthy, or total life expectancy. We will recommend this method as a neat and nifty way to decompose total life expectancy as well. Finally, we'll validate the transformation from Sullivan inputs to rates.
 
+# Application
+
+To demonstrate the method, we use data on the prevalence of Alzheimer and other dementia from the GBD [cite] and mortality data from the Human Mortality Database @barbieri2015data for men and women in Germany and the United States as the basic data inputs. Prevalence data from the GBD is delivered in abridged age groups up to 95+. We graduate this data to single ages using the PCLM algorithm of @rizzi2015efficient as implemented in the R package @ungroup, using HMD population counts as offsets. We impute 0s below age 40 in the prevalence data.
+
+We construct a hypothetical single-age pattern of the risk ratio of all-cause mortality of those with and without this condition. Our hypothetical age pattern of the risk ratio is based on the systematic review of @liang2021mortality, where a point estimate of 5.9 is stated as the average risk ratio, and studies such as @james2014contribution and @garre2019survival, which show that the risk ratio should diminish after age 70. We summarize our risk ratio pattern with a polynomial equation:
+
+\begin{equation}
+R(a) = 7.964 + .01411 * a -.0002017 * a ^ 2 + -.000005974 * a^3
+\end{equation}
+
+We will compare this with other reasonable choices of risk ratio patterns to get a feel for sensitivity to this choice.
+
+
 
 
 

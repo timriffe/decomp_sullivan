@@ -165,6 +165,10 @@ dec_data |>
   mutate(prev = if_else(prev < 0.0001,0,prev))
 
 dec_data_expanded <- list()
+
+R_guess <- 7.964 + .01411 * age -.0002017 * age ^ 2 + -.000005974 * age^3
+
+
 for (i in 1:nrow(groups)){
   meta <- groups[i, ]
   chunki <- dec_data |> 
@@ -172,7 +176,7 @@ for (i in 1:nrow(groups)){
                by = join_by(country, sex))
   ratesi <- sully_derive_rates(mx_all = chunki$mx,
                                pux = chunki$prev,
-                               R_guess = 2.5)
+                               R_guess = R_guess)
   dec_data_expanded[[i]] <- 
     left_join(chunki, ratesi,by = join_by(age))
 }
@@ -190,6 +194,7 @@ dec_data_expanded |>
 # just check rates
 dec_data_expanded |> 
   select(-c(pop,deaths,count)) |> 
+  mutate(qx_all = mx_to_qx(mx)) |> 
   pivot_longer(c(mx,qux,qhx),names_to = "measure",values_to="value") |> 
   ggplot(aes(x = age, y = value, color = measure, linetype = sex)) +
   geom_line() +
@@ -218,7 +223,10 @@ dec_data_expanded |>
 # good match
 
 dec_results <- list()
-for (i)
+for (i in nrow(groups)){
+  meta <- groups[i, ]
+  chunki <- dec_data_expanded |> right_join(meta)
+}
 
 ccr <- sully_rates_decomp(mx_all,
                           mx_all2,
