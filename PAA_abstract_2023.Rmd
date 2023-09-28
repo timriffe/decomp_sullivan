@@ -115,18 +115,26 @@ Now we are ready to decompose! For this, we will recommend a lifetable response 
 
 # Application
 
-To demonstrate the method, we use data on the prevalence of Alzheimer and other dementia from the GBD [cite] and mortality data from the Human Mortality Database @barbieri2015data for men and women in Germany and the United States as the basic data inputs. Prevalence data from the GBD is delivered in abridged age groups up to 95+. We graduate this data to single ages using the PCLM algorithm of @rizzi2015efficient as implemented in the R package @ungroup, using HMD population counts as offsets. We impute 0s below age 40 in the prevalence data.
+To demonstrate the method, we use data on the prevalence of Alzheimer and other dementia from the GBD (@ihme1) and mortality data from the Human Mortality Database @barbieri2015data for men and women in Germany and the United States as the basic data inputs. Prevalence data from the GBD is delivered in abridged age groups up to 95+. We graduate this data to single ages using the PCLM algorithm of @rizzi2015efficient as implemented in the R package `ungroup` (@ungroup), using HMD population counts as offsets. We impute 0s below age 40 in the prevalence data.
 
-We construct a hypothetical single-age pattern of the risk ratio of all-cause mortality of those with and without this condition. Our hypothetical age pattern of the risk ratio is based on the systematic review of @liang2021mortality, where a point estimate of 5.9 is stated as the average risk ratio, and studies such as @james2014contribution and @garre2019survival, which show that the risk ratio should diminish after age 70. We summarize our risk ratio pattern with a polynomial equation:
+We construct a hypothetical single-age pattern of the risk ratio of all-cause mortality of those with and without this condition. Our hypothetical age pattern of the risk ratio is based on the systematic review of @liang2021mortality, where a point estimate of 5.9 is stated as the average risk ratio, and studies such as @james2014contribution and @garre2019survival, which show that the risk ratio should diminish after age 70. We use a risk ratio pattern defined by the following polynomial equation over ages 0 to 100.
 
 \begin{equation}
-R(a) = 7.964 + .01411 * a -.0002017 * a ^ 2 + -.000005974 * a^3
+R(a) = 7.964 + .01411  a -.0002017  a ^ 2 + -.000005974  a^3
 \end{equation}
 
 We will compare this with other reasonable choices of risk ratio patterns to get a feel for sensitivity to this choice.
 
 
+Fig 1 sullivan pars
 
+Fig 2 mortality, note mortality equal to mha until age 40, then moves
+
+Fig 3 ms pars
+
+State expectancies equal
+
+shows different decomp results
 
 
 
