@@ -136,11 +136,13 @@ for (i in 1:nrow(groups)){
     left_join(mort,
               by = join_by(country, sex)) |> 
     pull(pop)
+
    counts <- pclm( countsi$age,  
                    countsi$count, 
                    offset = offi, 
                    nlast = 16,
-                   control = list(lambda = 1e5, deg = 3))$fitted * offi
+                   control = list(lambda = 1e6, deg = 3,kr=8))$fitted * offi
+  
    chunki <- cross_join(tibble(count = counts, age = 0:110), meta)
    countsL[[i]] <- chunki
 }
@@ -153,7 +155,7 @@ dec_data <- left_join(mort,
                       by = join_by(country, sex, age)) |> 
   mutate(mx = deaths / pop,
          prev = count / pop) |> 
-  filter(age <= 100)
+  filter(age <= 102)
 
 dec_data |> 
   ggplot(aes(x = age, y = prev, color = sex, linetype = country)) +
@@ -165,7 +167,7 @@ dec_data |>
   mutate(prev = if_else(prev < 0.0001,0,prev))
 
 dec_data_expanded <- list()
-
+age <- 0:102
 R_guess <- 7.964 + .01411 * age -.0002017 * age ^ 2 + -.000005974 * age^3
 
 
@@ -189,7 +191,9 @@ dec_data_expanded |>
   ggplot(aes(x = age, y = value, color = measure)) +
   geom_line() +
   facet_wrap(sex~country) +
-  theme_minimal()
+  theme_minimal() +
+  xlim(50,100) +
+  scale_y_log10()
 
 # just check rates
 dec_data_expanded |> 
@@ -202,55 +206,184 @@ dec_data_expanded |>
   theme_minimal() +
   scale_y_log10()
 
-
+library(xtable)
 dec_data_expanded |> 
+  filter(between(age,40,100)) |> 
   group_by(country, sex) |> 
   summarize(HLE = sully_normal(mx, prev, type = 'h'),
-            ULE = sully_normal(mx, prev, type = "u"))
+            ULE = sully_normal(mx, prev, type = "u")) |> xtable()
 
 dec_data_expanded |> 
+  filter(between(age,40,100)) |> 
   group_by(country, sex) |> 
   summarize(HLE = sully_rates(qhx = qhx, 
                               qux = qux, 
                               phux = phux, 
-                              p0 = 0, 
+                              p0 = prev[1], 
                               type = 'h'),
             ULE = sully_rates(qhx = qhx, 
                               qux = qux, 
                               phux = phux, 
-                              p0 = 0, 
+                              p0 = prev[1], 
                               type = 'u'))
 # good match
-
-dec_results <- list()
-for (i in nrow(groups)){
-  meta <- groups[i, ]
-  chunki <- dec_data_expanded |> right_join(meta)
-}
-
-ccr <- sully_rates_decomp(mx_all,
-                          mx_all2,
-                          pux,
-                          pux2,
-                          R1 = 1,
-                          R2 = 1,
-                          type = "h") 
-
-ccr |> 
-  ggplot(aes(x=age,y=value,color=component)) +
+write_csv(dec_data_expanded,"PAA_abstract_dec_data_expanded.csv")
+options(scipen = 5)
+fig1 <-
+dec_data_expanded |> 
+  # mutate(R_guess = rep(R_guess,4)) |> 
+  filter(age<=100) |> 
+  select(country, sex, age, `\\pi(a)` = prev, `m(a)` = mx) |> 
+  pivot_longer(c(`\\pi(a)`,`m(a)`), names_to = "input", values_to = "value") |> 
+  ggplot(aes(x=age,y = value, color = input, linetype = sex)) +
   geom_line() +
-  geom_point(data = filter(ccr,component == "init"))
+  scale_y_log10() +
+  xlim(40,100) +
+  facet_wrap(~country) +
+  theme_minimal() +
+  theme(axis.title = element_text(size=16),
+        axis.text = element_text(size=14),
+        strip.text = element_text(size=16),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size=16))  +
+  labs(y = "log(value)")
+  ggsave(fig1,file="fig1.pdf")
+
+fig2 <- 
+  tibble(age = age, `R(a)` = R_guess) |> 
+  ggplot(aes(x=age, y = `R(a)`)) +
+  geom_line() +
+    theme_minimal()+theme(axis.title = element_text(size=16),
+                          axis.text = element_text(size=14),
+                          strip.text = element_text(size=16),
+                          legend.text = element_text(size = 14),
+                          legend.title = element_text(size=16)) +
+    xlim(40,100) +
+    ylim(0,8)
+ggsave(fig2, file="fig2.pdf")
+
+fig3 <-
+  dec_data_expanded |> 
+  filter(age <= 100) |> 
+  mutate(`q(a)` = mx_to_qx(mx)) |> 
+  select(country, sex, age, `qu(a)` = qux, `qh(a)` = qhx,`q(a)`,`phu(a)` = phux  ) |> 
+  pivot_longer(-c(country, sex,age), values_to = "value", names_to = "component") |> 
+  ggplot(aes(x=age, y = value, color = component, linetype = sex)) +
+  geom_line() +
+  facet_wrap(~country) +
+  theme_minimal() +
+  scale_y_log10() +
+  xlim(40,100)+
+  theme_minimal()+
+  labs(y="transition") +
+  theme(axis.title = element_text(size=16),
+        axis.text = element_text(size=14),
+        strip.text = element_text(size=16),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size=16))
+fig3
+ggsave(fig3, file = "fig3.pdf")
+
+ctry_list <- list()
+for (ctry in c("Germany", "United States of America")) {
+  m <- dec_data_expanded |>
+    filter(country == ctry, sex == "Male",
+           between(age,40,100))
+  f <- dec_data_expanded |>
+    filter(country == ctry, sex == "Female",
+           between(age,40,100))
+  
+  type_list <- list()
+  for (type in c("h", "u", "t")) {
+    method_list <- list()
+    for (method in c("Sullivan", "Incidence")) {
+      if (method == "Incidence") {
+        cci <- sully_rates_decomp(
+          mx1 = m$mx,
+          mx2 = f$mx,
+          pux1 = m$prev,
+          pux2 = f$prev,
+          R1 = R_guess[(41:101)],
+          R2 = R_guess[(41:101)],
+          # R1 = 5.9,
+          # R2 = 5.9,
+          type = type
+        )  |>
+          mutate(method = method) |>
+          mutate(expectancy = type, .before = 1) |>
+          mutate(country = ctry, .before = 1)
+      }
+      
+      if (method == "Sullivan") {
+        cci <- sully_normal_decomp(
+          mx1 = m$mx,
+          mx2 = f$mx,
+          pux1 = m$prev,
+          pux2 = f$prev,
+          type = type
+        )  |>
+          mutate(method = method) |>
+          mutate(expectancy = type, .before = 1) |>
+          mutate(country = ctry, .before = 1)
+        
+      }
+      method_list[[method]] <- cci
+    }
+    type_list[[type]] <- bind_rows(method_list)
+  }
+  ctry_list[[ctry]] <- bind_rows(type_list)
+}
+dec_results <- bind_rows(ctry_list)
+
+components <-
+dec_results |> 
+  group_by(country, method, expectancy, component) |> 
+  summarize(contribution  = sum(value)) 
+components |> 
+  pivot_wider(names_from = c(method, component), names_sep = " ", 
+              values_from = contribution) |> 
+  xtable()
+
+fig4 <- 
+components |> 
+  filter(method == "Sullivan") |> 
+  mutate(component = case_when(component == "mx" ~ "m(a)",
+                               component == "pux" ~ "\\pi(a)")) |> 
+  ggplot(aes(x = component, y = contribution, fill = component))+
+  geom_col() +
+  facet_grid(vars(expectancy),vars(country)) +
+  theme_minimal() +
+  geom_hline(yintercept = 0) +
+  theme_minimal()+
+  theme(axis.title = element_text(size=16),
+        axis.text = element_text(size=14),
+        strip.text = element_text(size=16),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size=16)) +
+  guides(fill = "none") +
+  scale_fill_discrete_qualitative("Warm")
+ggsave(fig4, file = "fig4.svg")
 
 
-
-ccs <- sully_normal_decomp(
-  mx_all,
-  mx_all2,
-  pux,
-  pux2,
-  type = "u")
-
-
-ccs |> 
-  ggplot(aes(x=age,y=value,color=component)) +
-  geom_line()
+fig5 <- 
+components |> 
+  filter(method == "Incidence") |> 
+  mutate(component = case_when(component == "init" ~ "\\pi(40)",
+                               component == "qhx" ~ "qh(a)",
+                               component == "qux" ~ "qu(a)",
+                               component == "onset" ~ "phu(a)")) |> 
+  ggplot(aes(x = component, y = contribution, fill = component))+
+  geom_col() +
+  facet_grid(vars(expectancy),vars(country)) +
+  theme_minimal() +
+  geom_hline(yintercept = 0)+
+  theme(axis.title = element_text(size=16),
+        axis.text = element_text(size=14),
+        strip.text = element_text(size=16),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size=16)) +
+  guides(fill = "none") +
+  scale_fill_discrete_qualitative("Dark3")
+ggsave(fig5,file = "fig5.svg", width=8,height=7,units = "in")
+library(colorspace)
+hcl_palettes(plot=TRUE)

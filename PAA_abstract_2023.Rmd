@@ -11,11 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Abstract
-\textbf{Background}: If you have a lifetable and prevalence of some health condition, you can calculate a health expectancy using Sullivan's formula, and there are decomposition methods available to decompose differences (Nusselder & Looman 2004, Shkonikov & Andreev 2017). But you still might not be satisfied because observed prevalence could be driven by mortality differences by health state, and the lifetable is a weighted average of the mortality by different health states, which is unobserved in this case. 
+\textbf{Background}: If you have a lifetable and prevalence of some health condition, you can calculate a health expectancy using Sullivan's formula (@sullivan1971single), and there are methods available to decompose differences (@nusselder2004decomposition, @shkolnikov2017decomposition). But you still might not be satisfied because observed prevalence could be driven by unobserved mortality differences by health state, and because the lifetable is itself a prevalence-weighted average of the mortality by different health states. Thus these decomposition methods do not cleanly separate health and mortality effects.
 
-\textbf{Objectives}: We aim to transform Sullivan inputs into state-specific lifetables consistent with a given mortality rate ratio, and to convert prevalence into incidence. These rates should be independent of one another. Then we propose a rates-based decomposition approach.
+\textbf{Objectives}: We aim to (i) transform Sullivan inputs into state-specific mortality schedules consistent with a given mortality rate ratio, and to (ii) convert prevalence into incidence. These rates should be independent of one another, allowing for rates-based decomposition and a cleaner separation of health and mortality effects.
 
-\textbf{Methods}: This is premised on an algebraic transformation of mortality, prevalence, and a rate-ratio between states (which might come from the literature). We first derive incidence rates, then we reframe the calculation of health expectancy in terms of these. The resulting expectancy is identical to the traditional Sullivan one. Then we decompose the new version based on incidence parameters.
+\textbf{Methods}: Our approach is premised on an algebraic transformation of mortality, prevalence, and an imposed all-cause mortality rate-ratio between states (which might come from the literature). Transition probabilities representing health deterioration can then be backed out following the logic of multistate accounting. We first derive discrete-time transition probabilities, then we reframe the calculation of health expectancy in terms of these. All resulting expectancies (total and for states) is identical to the traditional Sullivan one. Differences between resuting multistate expectancies can then be based on incidence parameters.
 
 \textbf{Results}: If we're decomposing just health expectancy, the marginal health and mortality components sum to the same amounts as if were using previously proposed methods, but the age patterns are different. However, if we're decomposing either the unhealthy expectancy or overall life expectancy, this method gives new perspectives. Imagine, an Arriaga-style life expectancy decomposition with a health component and two mortality components.
 
@@ -60,12 +60,14 @@ m(a) = (1-\pi(a))m^h(a) + \pi(a)m^u(a)
 Let's say we can't see $m(a)^h$ ($m(a)^u$) directly, but we are comfortable importing a rate ratio $R(a)$ for the condition from some other epidemiological study or population, such that:
 
 \begin{equation}
+\label{eq:mua}
 m^u(a) = R(a)m^h(a)
 \end{equation}
 
 If you don't have the rate ratio $R(a)$ by age, then you might use a constant $R$, and the rest will be the same. In this case we can re-express $m(a)^h$ in the above two equations in terms of $m(a)$, $\pi(a)$, and $R(a)$:
 
 \begin{equation}
+\label{eq:mha}
 m^h(a) = \frac{m(a)}{1-\pi(a) + \pi(a)R(a)}
 \end{equation}
 And now we have two health-specific mortality schedules that are consistent with observed mortality, prevalence, and an assumed rate ratio. Next we need to re-express prevalence in terms of transition probabilities from good to poor health.
@@ -78,6 +80,7 @@ l^u(a) &= l(a) \pi(a)
 \end{equation}
 The change in $l^u(a)$ is a net change $n^u(a)$, where we can now account for the part due to mortality, and the remainder must be transitions into poor health. To back out deaths in poor health $d^u(a)$, you can either convert $m(a)^u$ to a probability $q^u(a)$ and multiply with $l^u(a)$, or convert $l^u(a)$ to lifetable exposure per equation (2), and multiply directly by the rates. The net change $n^u(a)$ plus the deaths $d^u(a)$ sum to the transitions into poor health $t^{h\rightarrow u}(a)$, and these can be converted to a transition probability $p^{h\rightarrow u}(a)$ by dividing out the healthy stock $l^h(a)$
 \begin{equation}
+\label{eq:onset}
 \begin{aligned}
 n^u(a) &= l^u(a+1) - l^u(a)\\
 d^u(a) &= L^u(a) m^u(a)\\
@@ -115,26 +118,72 @@ Now we are ready to decompose! For this, we will recommend a lifetable response 
 
 # Application
 
+# Data
 To demonstrate the method, we use data on the prevalence of Alzheimer and other dementia from the GBD (@ihme1) and mortality data from the Human Mortality Database @barbieri2015data for men and women in Germany and the United States as the basic data inputs. Prevalence data from the GBD is delivered in abridged age groups up to 95+. We graduate this data to single ages using the PCLM algorithm of @rizzi2015efficient as implemented in the R package `ungroup` (@ungroup), using HMD population counts as offsets. We impute 0s below age 40 in the prevalence data.
 
-We construct a hypothetical single-age pattern of the risk ratio of all-cause mortality of those with and without this condition. Our hypothetical age pattern of the risk ratio is based on the systematic review of @liang2021mortality, where a point estimate of 5.9 is stated as the average risk ratio, and studies such as @james2014contribution and @garre2019survival, which show that the risk ratio should diminish after age 70. We use a risk ratio pattern defined by the following polynomial equation over ages 0 to 100.
+Figure
+\begin{figure}
+\label{fig:sull_inputs}
+\caption{Data inputs used: $m(a)$ (rate scale) from HMD and $\pi(a)$ (probability scale) from GBD}
+\includegraphics[]{fig1.pdf}
+\end{figure}
+
+We construct a hypothetical single-age pattern of the risk ratio of all-cause mortality of those with and without this condition. Our hypothetical age pattern of the risk ratio is based on the systematic review of @liang2021mortality, where a point estimate of 5.9 is stated as the average risk ratio, and studies such as @james2014contribution and @garre2019survival, which show that the risk ratio should diminish after age 70. We use a risk ratio pattern defined by the following polynomial equation over ages 0 to 100, shown also in Fig~\ref{fig:sull_inputs}
 
 \begin{equation}
 R(a) = 7.964 + .01411  a -.0002017  a ^ 2 + -.000005974  a^3
 \end{equation}
 
-We will compare this with other reasonable choices of risk ratio patterns to get a feel for sensitivity to this choice.
+\begin{figure}
+\label{fig:sull_inputs}
+\caption{Risk ratio pattern $R(a)$ assumed}
+\includegraphics[]{fig2.pdf}
+\end{figure}
 
+We will compare this with other reasonable choices of risk ratio patterns to get a feel for sensitivity to this choice. Following equations \eqref{eq:mua} and \eqref{eq:mha}, we derive the following two conditional death probabilities $q^h(a)$ and $q^u(a)$, compared with the original lifetable death probabilities $q(a)$ in Fig ~\ref{fig:derived_rates}. We also include onset $p^{h\rightarrow u}(a)$ (red line) derived from eq \eqref{eq:onset}.
 
-Fig 1 sullivan pars
+\begin{figure}
+\label{fig:derived_rates}
+\caption{Derived all-cause conditional mortality probabilities ($q^h(a)$,$q^u(a)$) by dementia status compared with original HMD lifetable ($q(a)$), as well as derived onset $p^{h \rightarrow u}(a)$.}
+\includegraphics[]{fig3.pdf}
+\end{figure}
 
-Fig 2 mortality, note mortality equal to mha until age 40, then moves
+Both the transitions in Fig~\ref{fig:derived_rates} and the Sullivan inputs in Fig~\ref{fig:sull_inputs} give the same expectancies at age 40, displayed in Table~\ref{tab:expect}.
 
-Fig 3 ms pars
+\begin{table}[ht]
+\label{tab:expect}
+\caption{Remaining life expectancy at age 40 without (HLE) and with (ULE) dementia including Alzheimer's disease.}
+\centering
+\begin{tabular}{llrr}
+  \hline
+ country & sex & HLE & ULE \\ 
+  \hline
+Germany & Female & 41.78 & 2.15 \\ 
+Germany & Male & 38.47 & 1.11 \\ 
+United States of America & Female & 40.30 & 2.49 \\ 
+United States of America & Male & 37.27 & 1.57 \\ 
+   \hline
+\end{tabular}
+\end{table}
 
-State expectancies equal
+Finally, when we show the results of a Horiuchi decomposition of sex differences in HLE, ULE, and total life expectancy, comparing results obtained when we calculate HLE using the Sullivan parameters of Fig~\ref{fig:sull_inputs} versus the parameters of Fig~\ref{fig:}
 
-shows different decomp results
+\begin{table}[ht]
+\centering
+\begin{tabular}{llrrrr|rr}
+  \hline
+ Country & Expectancy & $\pi(40)$ & $p^{h\rightarrow u}(a)$ & $q^h(a)$ & $q^u(a)$ & $m(a)$ & $\pi(a)$ \\ 
+  \hline
+Germany & HLE & -0.00 & -0.34 & 3.62 & 0.03 & 3.78 & -0.46 \\ 
+Germany & ULE & 0.00 & 0.16 & 0.41 & 0.49 & 0.59 & 0.46 \\ 
+Germany & Total & -0.00 & -0.19 & 4.03 & 0.51 & 4.36 & 0.00 \\ 
+  \hline
+United States of America & HLE & -0.00 & -0.04 & 3.04 & 0.02 & 3.31 & -0.28 \\ 
+United States of America & ULE & 0.00 & 0.03 & 0.41 & 0.48 & 0.64 & 0.28 \\ 
+United States of America & Total & -0.00 & -0.02 & 3.45 & 0.51 & 3.95 & 0.00 \\ 
+   \hline
+\end{tabular}
+\end{table}
 
 
 

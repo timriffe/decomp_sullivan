@@ -74,12 +74,12 @@ sully_rates <- function(qhx, qux, phux, p0, type = "h"){
   # simple linear avg
   Lux <- (lux[-1] + lux[1:n]) / 2
   Lhx <- (lhx[-1] + lhx[1:n]) / 2
-  #pux = lux[-1] / lx_all[-1]
+  pux = lux[-(n+1)] / lx_all[-(n+1)]
   Lx_all <- Lux + Lhx
   # 
-  pux <- Lux / Lx_all
+  # pux <- Lux / Lx_all
   Lx_all <-  (lx_all[-1] + lx_all[1:n]) / 2
-  pux <- lux[1:n] / lx_all[1:n]
+  #pux <- lux[1:n] / lx_all[1:n]
   # 
  if (type == "h") {
    
