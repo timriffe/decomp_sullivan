@@ -150,7 +150,7 @@ We will compare this with other reasonable choices of risk ratio patterns to get
 
 Both the transitions in Fig~\ref{fig:derived_rates} and the Sullivan inputs in Fig~\ref{fig:sull_inputs} give the same expectancies at age 40, displayed in Table~\ref{tab:expect}.
 
-\begin{table}[ht]
+\begin{table}[ht!]
 \label{tab:expect}
 \caption{Remaining life expectancy at age 40 without (HLE) and with (ULE) dementia including Alzheimer's disease.}
 \centering
@@ -166,11 +166,15 @@ United States of America & Male & 37.27 & 1.57 \\
 \end{tabular}
 \end{table}
 
-Finally, when we show the results of a Horiuchi decomposition of sex differences in HLE, ULE, and total life expectancy, comparing results obtained when we calculate HLE using the Sullivan parameters of Fig~\ref{fig:sull_inputs} versus the parameters of Fig~\ref{fig:}
+Finally, we show the results of a Horiuchi decomposition of sex differences in HLE, ULE, and total life expectancy, comparing results obtained when we calculate HLE using the Sullivan parameters of Fig~\ref{fig:sull_inputs} versus the parameters of Fig~\ref{fig:}
 
-\begin{table}[ht]
+\begin{table}[ht!]
+\label{tab:results}
+\caption{Comparison of decomposition approaches for sex differences in remaining life expectancy at age 40 with and without Dementia. }
 \centering
-\begin{tabular}{llrrrr|rr}
+\begin{tabular}{ll|rrrr|rr}
+  
+  \multicolumn{2}{c}{} & \multicolumn{4}{c}{Incidence} & \multicolumn{2}{c}{Sullivan} \\
   \hline
  Country & Expectancy & $\pi(40)$ & $p^{h\rightarrow u}(a)$ & $q^h(a)$ & $q^u(a)$ & $m(a)$ & $\pi(a)$ \\ 
   \hline
