@@ -115,7 +115,7 @@ l^u(0) &= \pi(0)
 \end{aligned}
 \end{equation}
 
-Now we are ready to decompose! For this, we will recommend a lifetable response experiment approach to decomposition (@caswell1989analysis), and that will simply require citing some other work should the sensitivity calculation for this setup of a multistate model (in preparation, although @shen2023decomposition takes this general approach). For the present, we will set up the decomposition using the @horiuchi2008decomposition approach as in @moretti2023multistate, which yields equally valid and usable results. Either way, no new innovation is required to proceed to the decomposition now that expectancies can be equivalently redefined in terms of incidence. 
+Now we are ready to decompose! For this, we will recommend a lifetable response experiment approach to decomposition (@caswell1989analysis), and that will simply require citing some other work should the sensitivity calculation for this setup of a multistate model (in preparation, although @shen2023decomposition takes this general approach). For the present, we will set up the decomposition using the @horiuchi2008decomposition approach, using the @DemoDecomp implementation, as in @moretti2023multistate, which yields equally valid and usable results. Either way, no new innovation is required to proceed to the decomposition now that expectancies can be equivalently redefined in terms of incidence. 
 
 We compare the incidence-based decomposition results with the standard Sullivan decomposition results. To be clear, the two expectancy functions take the following form:
 
