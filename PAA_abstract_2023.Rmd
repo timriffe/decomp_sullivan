@@ -1,7 +1,7 @@
 ---
-title: "Decomposing Sullivan expectancy, an indirect incidence-based approach"
+title: "Decomposing a Sullivan expectancy: An indirect incidence-based approach"
 author: "Tim Riffe and Rustam Tursun-zade"
-date: "2023-09-21"
+date: "2023-09-30"
 output: pdf_document
 bibliography: references.bib  
 ---
@@ -11,23 +11,24 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Abstract
-\textbf{Background}: If you have a lifetable and prevalence of some health condition, you can calculate a health expectancy using Sullivan's formula (@sullivan1971single), and there are methods available to decompose differences (@nusselder2004decomposition, @shkolnikov2017decomposition). But you still might not be satisfied because observed prevalence could be driven by unobserved mortality differences by health state, and because the lifetable is itself a prevalence-weighted average of the mortality by different health states. Thus these decomposition methods do not cleanly separate health and mortality effects.
+\textbf{Background}: A lifetable and the prevalence of some health condition are sufficient to calculate a health expectancy (HLE) using the Sullivan method (@sullivan1971single), and there are methods available to decompose differences in HLE (@nusselder2004decomposition, @shkolnikov2017decomposition). But you still might not be satisfied because observed prevalence could be driven by unobserved mortality differences by health state, and because the lifetable is itself a prevalence-weighted average of the mortality by different health states. Thus these decomposition methods are not guaranteed to isolate health and mortality effects.
 
-\textbf{Objectives}: We aim to (i) transform Sullivan inputs into state-specific mortality schedules consistent with a given mortality rate ratio, and to (ii) convert prevalence into incidence. These rates should be independent of one another, allowing for rates-based decomposition and a cleaner separation of health and mortality effects.
+\textbf{Objectives}: We aim to (i) transform Sullivan inputs into state-specific mortality schedules consistent with a given mortality rate ratio, and to (ii) convert prevalence into incidence for the case of health deterioration without possibility of recovery. These rates can be considered independent of one another, allowing for rate-based decomposition and a cleaner separation of health and mortality effects. 
 
-\textbf{Methods}: Our approach is premised on an algebraic transformation of mortality, prevalence, and an imposed all-cause mortality rate-ratio between states (which might come from the literature). Transition probabilities representing health deterioration can then be backed out following the logic of multistate accounting. We first derive discrete-time transition probabilities, then we reframe the calculation of health expectancy in terms of these. All resulting expectancies (total and for states) is identical to the traditional Sullivan one. Differences between resuting multistate expectancies can then be based on incidence parameters.
+\textbf{Methods}: Our approach is premised on an algebraic transformation of mortality, prevalence, and an imposed all-cause mortality rate-ratio between states (which might come from the literature). Transition probabilities representing health deterioration are then inferred following the logic of multistate lifetable accounting. We first derive discrete-time transition probabilities, then we reframe the calculation of health expectancy in terms of these. All resulting expectancies (total and for states) are identical to the traditional Sullivan one, but corresponding decomposition results are now based on incidence parameters.
 
-\textbf{Results}: If we're decomposing just health expectancy, the marginal health and mortality components sum to the same amounts as if were using previously proposed methods, but the age patterns are different. However, if we're decomposing either the unhealthy expectancy or overall life expectancy, this method gives new perspectives. Imagine, an Arriaga-style life expectancy decomposition with a health component and two mortality components.
+\textbf{Results}: Both marginal sums and age patterns attributable to health and mortality differences are different when we decompose using the indirectly derived multistate expectancies versus a standard Sullivan decomposition. Interestingly, this method also enables a new decomposition of total life expectancy that includes a health component. 
 
 \textbf{Conclusions}: This method gives an indirect method to transform Sullivan-style inputs into a simple multistate model with an irreversible health state, and then shows how to decompose expectancies in terms of these new parameters. This might seem hypothetical because we do not observe a mortality rate ratio, but we think even so it's more informative than previously proposed Sullivan decompositions.
 
 # Introduction
 
-Healthy life expectancy (HLE, also called healthy life years) is most often calculated and reported using the Sullivan method (@sullivan1971single), and often the resulting estimate is very close to what would be derived from a multistate model. It's only natural for a demographer to want to decompose a Sullivan-derived expectancies. Decomposition tells us what drives the differences, and has the potential to better guide efforts to improve health and longevity. Ideally, we would decompose differences derived from incidence-based multistate models, since transitions are the ultimate levers of change. The parameters of a Sullivan estimate are a single lifetable and information on the prevalence of a health condition. Decomposition approaches that have thus far been proposed include the widely-used @nusselder2004decomposition approach, which frames mortality in terms of survival, and the modification proposed by @shkolnikov2017decomposition, which frames the mortality in terms of incidence. The later is meant to more appropriately assign mortality effects to ages, since mortality rates can be treated as independent between ages, whereas survival is not. Both of these approaches have a single mortality schedule, however, and both keep health in terms of prevalence rather than incidence (@luy2020life).
+Healthy life expectancy (HLE, also called healthy life years) is most often calculated and reported using the Sullivan method (@sullivan1971single), and often the resulting estimate is very close to what would be derived from a multistate model. It's only natural for a demographer to want to decompose a Sullivan-derived expectancies. Decomposition tells us what drives the differences, and has the potential to better guide efforts to improve health and longevity. The parameters of a Sullivan estimate are a single lifetable and information on the prevalence of a health condition. Decomposition approaches that have thus far been proposed include the widely-used @nusselder2004decomposition approach, which frames mortality in terms of survival, and the modification proposed by @shkolnikov2017decomposition, which frames the mortality in terms of incidence. The later is meant to more appropriately assign mortality effects to ages, since mortality rates can be treated as independent between ages, whereas survival is not. Both of these approaches have a single mortality schedule, however, and both keep health in terms of prevalence rather than incidence (@luy2020life). 
 
-If the prevalent health condition in question has any lethality penalty, then it's easy to accept that the aggregate mortality over health states must be the prevalence-weighted average of two state-specific mortality schedules, one relatively high, the other relatively low. Prevalence is also in part determined by mortality dynamics. A very lethal health characteristic will not usually have high prevalence, and so on. Since the Sullivan data inputs are in endogenous to one another, their use as decomposition parameters does not isolate the effects of health dynamics and mortality. There is not much we can directly do about this except try to find data that yields health transitions and state-specific mortality, but this is often simply not available. In this paper we propose an indirect transformation of Sullivan data inputs into incidence-based multistate transitions: two state-specific mortality schedules, and disease onset. This transformation is only possible for the case of irreversible health deterioration. Once the Sullivan data inputs are fully transformed like this, then you can calculate healthy life expectancy using a multistate approach (see e.g. @caswell2021healthy) and resulting decompositions should properly isolate health dynamics and mortality components.
+If the prevalent health condition in question has any lethality penalty, then it's easy to accept that the aggregate mortality over health states must be the prevalence-weighted average of two state-specific mortality schedules, one relatively high, the other relatively low. Prevalence is also in part determined by mortality dynamics. A very lethal health characteristic will not usually have high prevalence, and so on. Since the Sullivan data inputs are in endogenous to one another, their use as decomposition parameters does not isolate the effects of health dynamics and mortality. There is not much we can directly do about this except try to find data that yields health transitions and state-specific mortality, but this is often simply not available. In this paper we propose an indirect transformation of Sullivan data inputs into incidence-based multistate transitions: two state-specific mortality schedules, and disease onset. This transformation is only possible for the case of irreversible health deterioration. Once the Sullivan data inputs are fully transformed like this, then you can calculate healthy life expectancy using a multistate approach (see e.g. @caswell2021healthy) and resulting decompositions should properly isolate health dynamics and mortality components (@shen2023decomposition, @moretti2023multistate).
 
-There's just one catch: we need to assume a mortality rate ratio between health states. That might not be so bad, as there is a huge literature reporting rate ratios of various health conditions. But results will naturally vary depending on the value chosen. In this paper we will also explore the trade-off between isolated but uncertain components versus endogenous components, as well as other limitations of this method.
+There's just one catch: we need to assume a mortality rate ratio between health states. Such information can come from the vast literature reporting such ratios, which nowadays includes systematic reviews summarizing reports on the all-cause mortality risk ratio of people with and without specific health conditions. But results will naturally vary depending on the rate ratio value chosen. For our example, we apply this method to the case of sex differences in Alzheimer's disease including other dementias around 2018 in Germany and the United States. We show the advantages of the proposed transformation-decomposition procedure, and we promise to report thorough sensitivity testing for different risk ratio assumptions and health prevalence patterns.
+That future work will allow us to explore the trade-off between isolated but uncertain components versus observed but endogenous components, and other possible limitations of our method.
 
 # Methods
 
@@ -35,7 +36,7 @@ Let's define some variables
 \begin{description}
  \item{a} will index age, we assume discrete single ages through, please pardon the following notation which might seem continuous.
  \item{$m(a)$} observed all-cause aggregate mortality rates for age $a$. 
- \item{$q(a)$} conditional mortality probabilities derived from the mortality rates as $q(a) = 1 - e^{-m(a)}$
+ \item{$q(a)$} conditional mortality probabilities derived from the (single age) mortality rates as $q(a) = 1 - e^{-m(a)}$
  \item{$l(a)$} lifetable survivorship
  \item{$L(a)$} lifetable exposure
  \item{$\pi(a)$} the prevalence of a health condition expressed as a probability
@@ -47,17 +48,19 @@ Let's define some variables
 For brevity, and at loss of demographic precision, let's use the following trick to convert rates $m(a)$ to survival probabilities (from birth) $l(a)$:
 
 \begin{equation}
+\label{eq:mx2lx}
 l(a+1) = e^{-\sum_{x=0}^{a} m(x)}
 \end{equation}
-where age 0 is simply 1. When needed, we will then approximate $L(a)$ using linear interpolation:
+where age 0 is simply 1. From this we can directly transform to conditional death probabilities when needed, following standard lifetable calculations. We approximate $L(a)$ using linear interpolation:
 \begin{equation}
+\label{eq:Lx}
 L(a) = \frac{l(a)+l(a+1)}{2}
 \end{equation}
 Let's say that mortality $m(a)$ is the prevalence-weighted average of state-specific mortality rates that we don't observe:
 \begin{equation}
 m(a) = (1-\pi(a))m^h(a) + \pi(a)m^u(a)
 \end{equation}
-Let's say we can't see $m(a)^h$ ($m(a)^u$) directly, but we are comfortable importing a rate ratio $R(a)$ for the condition from some other epidemiological study or population, such that:
+We do not see $m(a)^h$ ($m(a)^u$) directly, but we are comfortable importing a rate ratio $R(a)$ for the condition from some other epidemiological study or population, such that:
 
 \begin{equation}
 \label{eq:mua}
@@ -71,14 +74,14 @@ If you don't have the rate ratio $R(a)$ by age, then you might use a constant $R
 m^h(a) = \frac{m(a)}{1-\pi(a) + \pi(a)R(a)}
 \end{equation}
 And now we have two health-specific mortality schedules that are consistent with observed mortality, prevalence, and an assumed rate ratio. Next we need to re-express prevalence in terms of transition probabilities from good to poor health.
-First, derive $l(a)$ per equation 1 or your favorite lifetable method, then split it into healthy and unhealthy parts using $\pi(a)$ in the usual way:
+First, derive $l(a)$ per equation \eqref{eq:mx2lx} (or your favorite lifetable method), then split it into healthy and unhealthy parts using $\pi(a)$ in the usual way:
 \begin{equation}
 \begin{aligned}
 l^h(a) &= l(a) (1-\pi(a))\\
 l^u(a) &= l(a) \pi(a)
 \end{aligned}
 \end{equation}
-The change in $l^u(a)$ is a net change $n^u(a)$, where we can now account for the part due to mortality, and the remainder must be transitions into poor health. To back out deaths in poor health $d^u(a)$, you can either convert $m(a)^u$ to a probability $q^u(a)$ and multiply with $l^u(a)$, or convert $l^u(a)$ to lifetable exposure per equation (2), and multiply directly by the rates. The net change $n^u(a)$ plus the deaths $d^u(a)$ sum to the transitions into poor health $t^{h\rightarrow u}(a)$, and these can be converted to a transition probability $p^{h\rightarrow u}(a)$ by dividing out the healthy stock $l^h(a)$
+The change in $l^u(a)$ is a net change $n^u(a)$, where we can now account for the decrement due to mortality, and the remainder must be transitions into poor health. To back out deaths in poor health $d^u(a)$, you can either convert $m(a)^u$ to a probability $q^u(a)$ and multiply with $l^u(a)$, or convert $l^u(a)$ to lifetable exposure per equation \eqref{eq:Lx} (or again your favorite lifetable method), and multiply directly by the rates. The net change $n^u(a)$ plus the deaths $d^u(a)$ sum to the transitions into poor health $t^{h\rightarrow u}(a)$, and these can be converted to a transition probability $p^{h\rightarrow u}(a)$ by dividing out the healthy suvivors $l^h(a)$
 \begin{equation}
 \label{eq:onset}
 \begin{aligned}
@@ -89,9 +92,7 @@ p^{h\rightarrow u}(a) &= \frac{t^{h\rightarrow u}(a) }{l^h(a)}
 \end{aligned}
 \end{equation}
 
-Now we have parameters necessary to calculate healthy life expectancy in terms of pure incidence, $m^h(a)$, $m^u(a)$, and $p^{h\rightarrow u}(a)$. We may also wish to specify an initial composition to the radix based on $\pi(0)$. Recall the purpose of doing this is to give us conceivably independent parameters, so as to properly isolate effects when we decompose. So our expectancy function needs to be based on just these new parameters. You can set things up using matrix algebra as described by @caswell2021healthy, or simply iterate up like so to derive $l^h(a)$ and $l^u(a)$. 
-
-You could do so additively like so
+Now we have parameters necessary to calculate healthy life expectancy in terms of pure incidence, $m^h(a)$, $m^u(a)$, and $p^{h\rightarrow u}(a)$. We may also wish to specify an initial composition to the radix based on $\pi(0)$. Recall the purpose of doing this is to give us conceivably independent parameters, so as to properly isolate effects when we decompose. So our expectancy function needs to be based on just these new parameters. You can set things up using matrix algebra as described by @caswell2021healthy, or simply iterate up like so to derive $l^h(a)$ and $l^u(a)$. You could do so additively like so
 \begin{equation}
 \begin{aligned}
 l^h(a+1) &= l^h(a) - d^h(a) - t^{h\rightarrow u}(a) \\
@@ -114,45 +115,62 @@ l^u(0) &= \pi(0)
 \end{aligned}
 \end{equation}
 
-Now we are ready to decompose! For this, we will recommend a lifetable response experiment approach to decomposition (@caswell1989analysis), and that will simply require citing some other work should the sensitivity calculation for this setup of a multistate model (in preparation). For the present, we will set up the decomposition using the @horiuchi2008decomposition approach. Either way, no new innovation is required to proceed to the decomposition now that expectancy is redefined in terms of incidence. In the final paper, we will show how expectancy results are the same as standard Sullivan expectancies, but how decomposition results are different from previous Sullivan decompositions. The lessons depend on whether we look at healthy, unhealthy, or total life expectancy. We will recommend this method as a neat and nifty way to decompose total life expectancy as well. Finally, we'll validate the transformation from Sullivan inputs to rates.
+Now we are ready to decompose! For this, we will recommend a lifetable response experiment approach to decomposition (@caswell1989analysis), and that will simply require citing some other work should the sensitivity calculation for this setup of a multistate model (in preparation, although @shen2023decomposition takes this general approach). For the present, we will set up the decomposition using the @horiuchi2008decomposition approach as in @moretti2023multistate, which yields equally valid and usable results. Either way, no new innovation is required to proceed to the decomposition now that expectancies can be equivalently redefined in terms of incidence. 
+
+We compare the incidence-based decomposition results with the standard Sullivan decomposition results. To be clear, the two expectancy functions take the following form:
+
+\begin{equation}
+HLE = f(m,\pi) 
+\end{equation}
+for the Sullivan case, versus
+\begin{equation}
+HLE = g(q^h,q^u,p^{h \rightarrow u},\pi(0)) 
+\end{equation}
+
+for the indirect incidence case we propose.
 
 # Application
 
 # Data
-To demonstrate the method, we use data on the prevalence of Alzheimer and other dementia from the GBD (@ihme1) and mortality data from the Human Mortality Database @barbieri2015data for men and women in Germany and the United States as the basic data inputs. Prevalence data from the GBD is delivered in abridged age groups up to 95+. We graduate this data to single ages using the PCLM algorithm of @rizzi2015efficient as implemented in the R package `ungroup` (@ungroup), using HMD population counts as offsets. We impute 0s below age 40 in the prevalence data.
+To demonstrate the method, we use data on the prevalence of Alzheimer and other dementia from the GBD (@ihme1) and mortality data from the Human Mortality Database @barbieri2015data for men and women in Germany and the United States as the basic data inputs. Prevalence data from the GBD is delivered in abridged age groups up to 95+. We smooth and graduate this data to single ages using the PCLM algorithm of @rizzi2015efficient as implemented in the R package `ungroup` (@ungroup), using HMD population counts as offsets. All analyses are truncated at age 40 because prevalence of this condition is nearly zero in younger ages in this data.
 
-Figure
-\begin{figure}
+\begin{figure}[ht!]
+\centering
+\caption{Sullivan data inputs used: mortality $m(a)$ (rate scale) from HMD and prevalence of Alzheimer's disease and other dementias $\pi(a)$ (probability scale) from GBD}
 \label{fig:sull_inputs}
-\caption{Data inputs used: $m(a)$ (rate scale) from HMD and $\pi(a)$ (probability scale) from GBD}
-\includegraphics[]{fig1.pdf}
+\includegraphics[width=0.5\textwidth]{fig1.pdf}
 \end{figure}
 
-We construct a hypothetical single-age pattern of the risk ratio of all-cause mortality of those with and without this condition. Our hypothetical age pattern of the risk ratio is based on the systematic review of @liang2021mortality, where a point estimate of 5.9 is stated as the average risk ratio, and studies such as @james2014contribution and @garre2019survival, which show that the risk ratio should diminish after age 70. We use a risk ratio pattern defined by the following polynomial equation over ages 0 to 100, shown also in Fig~\ref{fig:sull_inputs}
+We construct a hypothetical single-age pattern of the risk ratio of all-cause mortality of those with and without this condition. Our hypothetical age pattern of the risk ratio is based on the systematic review of @liang2021mortality, where a point estimate of 5.9 is stated as the average risk ratio, and studies such as @james2014contribution and @garre2019survival, which show that the risk ratio should diminish after age 70. We use a risk ratio pattern defined by the following polynomial equation over ages 0 to 100, shown also in Fig \ref{fig:Ra}
 
 \begin{equation}
 R(a) = 7.964 + .01411  a -.0002017  a ^ 2 + -.000005974  a^3
 \end{equation}
 
-\begin{figure}
-\label{fig:sull_inputs}
+\begin{figure}[ht!]
+\centering
 \caption{Risk ratio pattern $R(a)$ assumed}
-\includegraphics[]{fig2.pdf}
+\label{fig:Ra}
+\includegraphics[width=0.5\textwidth]{fig2.pdf}
 \end{figure}
 
-We will compare this with other reasonable choices of risk ratio patterns to get a feel for sensitivity to this choice. Following equations \eqref{eq:mua} and \eqref{eq:mha}, we derive the following two conditional death probabilities $q^h(a)$ and $q^u(a)$, compared with the original lifetable death probabilities $q(a)$ in Fig ~\ref{fig:derived_rates}. We also include onset $p^{h\rightarrow u}(a)$ (red line) derived from eq \eqref{eq:onset}.
+This pattern will be the primary object of sensitivity analysis as this paper develops. As it stands, assuming a flat value of 5.9 for $R$ makes no obvious difference in the visualized results. 
 
-\begin{figure}
-\label{fig:derived_rates}
+# Results
+Following equations \eqref{eq:mua} and \eqref{eq:mha}, we derive the following two conditional death probabilities $q^h(a)$ and $q^u(a)$, compared with the original lifetable death probabilities $q(a)$ (converted to be consistent with eq \eqref{eq:mx2lx}) in Fig \ref{fig:derived_rates}. We also include onset $p^{h\rightarrow u}(a)$ (red line) derived from eq \eqref{eq:onset}.
+
+\begin{figure}[ht!]
+\centering
 \caption{Derived all-cause conditional mortality probabilities ($q^h(a)$,$q^u(a)$) by dementia status compared with original HMD lifetable ($q(a)$), as well as derived onset $p^{h \rightarrow u}(a)$.}
-\includegraphics[]{fig3.pdf}
+\label{fig:derived_rates}
+\includegraphics[width=0.5\textwidth]{fig3.pdf}
 \end{figure}
 
-Both the transitions in Fig~\ref{fig:derived_rates} and the Sullivan inputs in Fig~\ref{fig:sull_inputs} give the same expectancies at age 40, displayed in Table~\ref{tab:expect}.
+Both the transitions in Fig \ref{fig:derived_rates} and the Sullivan inputs in Fig \ref{fig:sull_inputs} give the same expectancies at age 40, displayed in Table \ref{tab:expect}.
 
 \begin{table}[ht!]
-\label{tab:expect}
 \caption{Remaining life expectancy at age 40 without (HLE) and with (ULE) dementia including Alzheimer's disease.}
+\label{tab:expect}
 \centering
 \begin{tabular}{llrr}
   \hline
@@ -166,7 +184,7 @@ United States of America & Male & 37.27 & 1.57 \\
 \end{tabular}
 \end{table}
 
-Finally, we show the results of a Horiuchi decomposition of sex differences in HLE, ULE, and total life expectancy, comparing results obtained when we calculate HLE using the Sullivan parameters of Fig~\ref{fig:sull_inputs} versus the parameters of Fig~\ref{fig:}
+Finally, we show the results of incidence-based decomposition of sex differences in HLE, ULE, and total life expectancy, comparing results obtained when we calculate HLE using the Sullivan parameters of Fig \ref{fig:sull_inputs} versus the incidence parameters of Fig \ref{fig:derived_rates}.
 
 \begin{table}[ht!]
 \label{tab:results}
@@ -176,7 +194,7 @@ Finally, we show the results of a Horiuchi decomposition of sex differences in H
   
   \multicolumn{2}{c}{} & \multicolumn{4}{c}{Incidence} & \multicolumn{2}{c}{Sullivan} \\
   \hline
- Country & Expectancy & $\pi(40)$ & $p^{h\rightarrow u}(a)$ & $q^h(a)$ & $q^u(a)$ & $m(a)$ & $\pi(a)$ \\ 
+ Country & Expectancy & $\pi(40)$ & $p^{h\rightarrow u}$ & $q^h$ & $q^u$ & $m$ & $\pi$ \\ 
   \hline
 Germany & HLE & -0.00 & -0.34 & 3.62 & 0.03 & 3.78 & -0.46 \\ 
 Germany & ULE & 0.00 & 0.16 & 0.41 & 0.49 & 0.59 & 0.46 \\ 
@@ -189,7 +207,15 @@ United States of America & Total & -0.00 & -0.02 & 3.45 & 0.51 & 3.95 & 0.00 \\
 \end{tabular}
 \end{table}
 
+The main findings are that (i) initial conditions at age 40 play a negligible role in this data, (ii) males' lower onset of dementia in Germany reduced the sex-gap in HLE by around 4 months, and the overall life expectancy gap by 2 months, whereas in the USA sex differences in onset were negligible, (iii) most of the female advantage in all expectancies (HLE, ULE, Total LE) are due to lower mortality rates among those without dementia, accounting for over 3 years of the HLE and Total LE gaps in both countries, and almost 5 months of the ULE gap, (iv) higher male mortality rates among those with dementia increased the sex gap in ULE and Total LE by around half a year in both countries.
 
+The Sullivan results are different in a few key ways: (i) with the exception of ULE in the USA, more weight is given to mortality for ULE and HLE (ii) the health effect for HLE ($\pi$) is symmetrical to that of ULE, whereas for the incidence-based decomposition onset ($p^{h\rightarrow u}$)  is not, (iii) the prevalence effect is of greater magnitude than the onset transition effect for both expectancies and countries, (iv) 100% of the Total LE difference is attributed to mortality differences by necessity, in essence because the Sullivan approach gives the same mortality to both health states.
+
+# Discussion
+
+These preliminary results highlight how incidence-based decomposition can yield more specific insights into what explains differences in HLE, ULE and Total LE. In this current proposal, we include a health condition with a very large lethality penalty. We will add another example of a non-reversible health condition with a different prevalence pattern and different likely rate ratio that might highlight other ways that this method gives more information. For example, in the current dementia example, initial conditions at age 40 were unimportant, but in general we'd expect initial conditions to be very important for multistate models with non-reversible states of decreased health.
+
+We think that leveraging the rate ratio as we do here could be a useful trick for other empirical exercises. For example, when estimating multistate transitions from surveys like HRS, one can adjust for mortality underestimation using the directly derived rate ratio and an a higher quality lifetable based on vital statistics. We have not yet reflected on what further minimal assumption would be required in order to extend the method to include recovery transitions.
 
 # References
 
