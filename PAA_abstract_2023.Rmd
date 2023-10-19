@@ -2,7 +2,9 @@
 title: "Decomposing a Sullivan expectancy: An indirect incidence-based approach"
 author: "Tim Riffe and Rustam Tursun-zade"
 date: "2023-09-30"
-output: pdf_document
+output: 
+  pdf_document:
+    keep_tex:  true
 bibliography: references.bib  
 ---
 
