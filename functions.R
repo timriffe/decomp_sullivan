@@ -13,6 +13,11 @@ mx_to_qx <- function(mx) {
   
 }
 
+# for sake of complemtary completeness
+qx_to_mx <- function(qx){
+  -log(1 - qx)
+}
+
 # calculate l(x) from q(x)
 qx_to_lx <- function(qx) {
   
@@ -29,14 +34,16 @@ mx_to_lx <- function(mx) {
   
 }
 
-
+lx_to_Lx <- function(lx){
+  (lx[-1] + lx[-length(lx)]) / 2
+}
 
 #Here's an old-fashioned Sullivan function, calculates the set of for now HLE, ULE and their sum. Currently framed in terms of $m(a)$.
 
 sully_normal <- function(mx_all, pux, type = 'h') {
   
   lx_all <- mx_to_lx(mx_all)
-  Lx_all <- (lx_all[-1] + lx_all[-length(lx_all)]) / 2
+  Lx_all <- lx_to_Lx(lx_all)
   
   if (type == "h") {
     
@@ -72,8 +79,8 @@ sully_rates <- function(qhx, qux, phux, p0, type = "h"){
   }
   lx_all <- lhx + lux
   # simple linear avg
-  Lux <- (lux[-1] + lux[1:n]) / 2
-  Lhx <- (lhx[-1] + lhx[1:n]) / 2
+  Lux <- lx_to_Lx(lux)
+  Lhx <- lx_to_Lx(lhx)
   pux = lux[-(n+1)] / lx_all[-(n+1)]
   Lx_all <- Lux + Lhx
   # 
@@ -100,6 +107,52 @@ sully_rates <- function(qhx, qux, phux, p0, type = "h"){
 
   #sum(Lhx)
 }
+
+sully_rates2 <- function(mhx, mux, phux, p0, type = "h"){
+  n   <- length(mhx)
+  lux <- rep(0, n + 1)
+  lhx <- rep(0, n + 1)
+  
+  qhx <- mx_to_qx(mhx)
+  qux <- mx_to_qx(mux)
+  lux[1] <- p0
+  lhx[1] <- 1 - p0
+  for (i in 1:n){
+    lux[i+1] <- lux[i] * (1 - qux[i]) + lhx[i] * phux[i]
+    lhx[i+1] <- lhx[i] * (1 - qhx[i] - phux[i])
+  }
+  lx_all <- lhx + lux
+  # simple linear avg
+  Lux <- lx_to_Lx(lux)
+  Lhx <- lx_to_Lx(lhx)
+  pux = lux[-(n+1)] / lx_all[-(n+1)]
+  Lx_all <- Lux + Lhx
+  # 
+  # pux <- Lux / Lx_all
+  Lx_all <-  (lx_all[-1] + lx_all[1:n]) / 2
+  #pux <- lux[1:n] / lx_all[1:n]
+  # 
+  if (type == "h") {
+    
+    return( sum(Lx_all * (1 - pux)))
+    
+  }
+  
+  if (type == "u") {
+    
+    return(sum(Lx_all * (pux)))
+    
+  }
+  if (type == "t") {
+    
+    return(sum(Lx_all))
+    
+  }
+  
+  #sum(Lhx)
+}
+
+
 
 # This gets incidence from Sullivan inputs framed in terms of $m(a)$
 
@@ -131,6 +184,34 @@ sully_derive_rates <- function(mx_all, pux, R_guess) {
   tibble(age, qux, qhx, phux)
   
 }
+# Take things the other direction
+rates_derive_sully <- function(qux, qhx, phux, age, p0=0){
+ 
+  n   <- length(qhx)
+  lux <- rep(0, n + 1)
+  lhx <- rep(0, n + 1)
+  
+  lux[1] <- p0
+  lhx[1] <- 1 - p0
+  for (i in 1:n){
+    lux[i+1] <- lux[i] * (1 - qux[i]) + lhx[i] * phux[i]
+    lhx[i+1] <- lhx[i] * (1 - qhx[i] - phux[i])
+  }
+  lx_all <- lhx + lux
+  # simple linear avg
+  # Lux <- lx_to_Lx(lux)
+  # Lhx <- lx_to_Lx(lhx)
+  pux <- lux[-(n+1)] / lx_all[-(n+1)]
+  
+  mux <- qx_to_mx(qux)
+  mhx <- qx_to_mx(qhx)
+  mx_all <- mux * pux + mhx * (1 - pux)
+  tibble(age,
+         mx_all,
+         pux
+         )
+}
+
 
 # Wrap both functions to accept a single vector of arguments:
 

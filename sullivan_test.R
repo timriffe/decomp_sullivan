@@ -1,6 +1,6 @@
 
 source("functions.R")
-
+library(scales)
 # TR: note I'm keeping for now all ages 0-110, and graduating to these too,
 # I stopped the exercise on seeing the age patterns of prevalence, 
 # which are impossible.
@@ -159,7 +159,11 @@ dec_data <- left_join(mort,
 
 dec_data |> 
   ggplot(aes(x = age, y = prev, color = sex, linetype = country)) +
-  geom_line() 
+  geom_line() +
+  scale_y_log10(labels = label_comma()) + 
+  theme_minimal() +
+  labs(y = "prevalence (logged)",
+       caption = "Source: GBD graduated to single ages")
 
 # these prevalence age patterns seem to reach values that are too high,
 dec_data <- 
