@@ -1,4 +1,6 @@
-
+library(tidyverse)
+library(scales)
+source("functions.R")
 # Fig 1:
 
 
@@ -53,6 +55,20 @@ mx |>
   labs(y = "sullivan components") +
   annotate("text",40,.35, label = "prevalence",angle = 32,size=6) +
   annotate("text",75,.8, label = "survivorship",angle = -60, size = 6)
+
+
+mx |> 
+  group_by(pop) |> 
+  mutate(lx = mx_to_lx(mx) %>% '['(1:n())) |> 
+  rename(edad = age,
+         pob = pop) |> 
+  ggplot(aes(x=edad, y = lx, color = pob)) +
+  geom_line(linewidth=1.5) +
+  theme_minimal(base_size = 14) +
+  geom_line(data = prev |> rename(edad=age, pob=pop), mapping = aes(y=prev), linetype = 2, linewidth=1.5) +
+  labs(y = "Componentes Sullivan") +
+  annotate("text",40,.35, label = "prevalencia",angle = 32,size=6) +
+  annotate("text",75,.8, label = "supervivencia",angle = -60, size = 6)
 
 f2 <-
 mx |> 
