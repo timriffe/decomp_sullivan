@@ -8,9 +8,7 @@ library(ungroup)
 # ----- Helper functions ----- #
 # calculate q(x) from m(x). Assumes single age intervals
 mx_to_qx <- function(mx) {
-  
   1 - exp(-mx)
-  
 }
 
 # for sake of complemtary completeness
