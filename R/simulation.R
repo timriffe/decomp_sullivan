@@ -143,8 +143,9 @@ init_constant <- function(x) {
   setNames(init, c("H", "U"))
 }
 
+# init <- c(H=1,U=0)
 # Create multistate lifetable
-calculate_lt <- function(P) {
+calculate_lt <- function(P, init = NULL) {
   
   P %>% 
     pivot_longer(-c(age, from),
@@ -159,7 +160,9 @@ calculate_lt <- function(P) {
       .x$lu <- numeric(nrow(.x))
       
       # Initialize
-      init <- init_constant(.x[1, ])
+      if (is.null(init)){
+         init <- init_constant(.x[1, ])
+      }
       .x$lh[1] <- init["H"]
       .x$lu[1] <- init["U"]
       
