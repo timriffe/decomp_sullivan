@@ -3,15 +3,24 @@ library(tidyverse)
 library(DemoDecomp)
 library(expm)
 # ---------------------------------------------------------------------------- #
-# Assumptions: changes should come from intercept rather than slope
-# 10% from slope and 90% from intercept
-# change that time 2 is doing better than time 1
-# change to only 1 time. And run it 2 times
+# Conceptual assumption:
+# Differences between populations (or time points) are assumed to be driven
+# primarily by shifts in the level of the hazards (intercepts), rather than
+# by changes in the age-gradient (slopes).
+# We treat most improvements/deteriorations as vertical shifts
+# in the hazard schedule rather than structural age-pattern changes.
 
 # Incidence go up with age
 # Healthy mortality go up and is Gompertz-like
 # Recovery goes down with age
 # Unhealthy mortality > healthy mortality
+
+# Interpretation of intercepts (baseline hazard at age 50 midpoint):
+# exp(intercept) gives the approximate hazard at age 50.
+# These values were chosen to produce plausible age-specific dynamics:
+# - Incidence increases with age
+# - Healthy mortality is lower than unhealthy mortality
+# - Recovery declines with age (negative slope)
 
 # Intercepts
 # exp(-3.5) = 0.030   -> 3% incidence
@@ -27,6 +36,7 @@ library(expm)
 # h - healthy
 # u - unhealthy
 # d - dead
+
 # ---------------------------------------------------------------------------- #
 # Initial parameters for log hazards
 ground_pars <- tibble(
@@ -143,7 +153,7 @@ init_constant <- function(x) {
   setNames(init, c("H", "U"))
 }
 
-# init <- c(H=1,U=0)
+# init <- c(H=0.9,U=0.1)
 # Create multistate lifetable
 calculate_lt <- function(P, init = NULL) {
   
@@ -207,184 +217,113 @@ lt %>%
   theme_bw()
 # ---------------------------------------------------------------------------- #
 # combine all steps to create mslt with one function
-run_mslt <- function(pars_df, age) {
+run_mslt <- function(pars_df, age, init = NULL) {
   
   haz <- expand_hazards(pars_df, age, age_int = 1)
   P   <- haz_to_probs(haz, age)
-  lt  <- calculate_lt(P)
+  lt  <- calculate_lt(P, init = init)
   
-  lt
+  return(lt)
 }
 # ---------------------------------------------------------------------------- #
-# create ground summary LE measures for optim
-ground_summary <- lt %>%
-  summarise(
-    HLE = sum(lh),
-    ULE = sum(lu),
-    LE  = sum(lx)
-  )
+# create ground summary lx and prevalence measures for optim
+ground_summary <- run_mslt(ground_pars, age, init = NULL) %>%
+  select(age, lx, prevalence)
 # ---------------------------------------------------------------------------- #
-# this function just takes the corresponding parameter
-# as a starting parameter for optimization
-# Ex: if the world is no recovery, then intercepts
-# are from u = -3.5, ud =  -4.5
-# I currently work with intercepts only
-get_start <- function(world) {
-  
-  if (world == "no_recovery") {
-    ground_pars %>%
-      filter(trans %in% c("hu","ud")) %>%
-      pull(intercept)
-  } else if (world == "high_incidence") {
-    ground_pars %>%
-      filter(trans %in% c("hu","hd")) %>%
-      pull(intercept)
-  } else if (world == "mortality_ratio_shift") {
-    ground_pars %>%
-      filter(trans %in% c("ud","hd")) %>%
-      pull(intercept)
-  } else if (world == "incidence_recovery_tradeoff") {
-    ground_pars %>%
-      filter(trans %in% c("hu","uh")) %>%
-      pull(intercept)
-  }
-}
-# ---------------------------------------------------------------------------- #
-# define our worlds names
-worlds <- c("no_recovery",
-            "high_incidence",
-            "mortality_ratio_shift",
-            "incidence_recovery_tradeoff")
-
-# function that changes our pars with accordance to worlds
-# e.g world = no recovery, then we start from the
-# uh = -20, slope = 0
-rebuild_pars <- function(par_vec, world) {
-  
-  pars_mod <- ground_pars
-  
-  if (world == "no_recovery") {
-    
-    # remove recovery properly
-    pars_mod$intercept[pars_mod$trans == "uh"] <- -20
-    pars_mod$slope[pars_mod$trans == "uh"]     <- 0
-    
-    # optimize unhealthy mortality
-    pars_mod$intercept[pars_mod$trans == "ud"] <- par_vec[1]
-    pars_mod$slope[pars_mod$trans == "ud"]     <- par_vec[2]
-  }
-  
-  if (world == "high_incidence") {
-    
-    # optimize incidence
-    pars_mod$intercept[pars_mod$trans == "hu"] <- par_vec[1]
-    pars_mod$slope[pars_mod$trans == "hu"]     <- par_vec[2]
-  }
-  
-  if (world == "mortality_ratio_shift") {
-    
-    # vary unhealthy mortality only
-    pars_mod$intercept[pars_mod$trans == "ud"] <- par_vec[1]
-    pars_mod$slope[pars_mod$trans == "ud"]     <- par_vec[2]
-  }
-  
-  if (world == "incidence_recovery_tradeoff") {
-    
-    pars_mod$intercept[pars_mod$trans == "hu"] <- par_vec[1]
-    pars_mod$slope[pars_mod$trans == "uh"]     <- par_vec[2]
-  }
-  
-  pars_mod
-}
-# ---------------------------------------------------------------------------- #
-# Optimization function
-# I try to find the different trajectories
-# that result in same HLE and LE values
-# optimize the HLE and LE difference
-mslt_min_summary <- function(par_vec,
-                             world,
+# Run optimization for lx and prevalence
+# optimize only 3 intercepts, keep slopes intact
+mslt_min_summary <- function(par, 
+                             fixed_trans = "uh",
+                             fixed_value = -10,
                              ground_summary,
-                             age = 50:100) {
-  
-  pars_mod <- rebuild_pars(par_vec, world)
-  
-  lt_mod <- run_mslt(pars_mod, age)
-  
-  summ_mod <- lt_mod %>%
-    summarise(
-      HLE = sum(lh),
-      LE  = sum(lx)
-    )
-  
-  loss <- (summ_mod$HLE - ground_summary$HLE)^2 +
-    (summ_mod$LE  - ground_summary$LE)^2
-  
-  return(loss)
-}
-
-# run optimization
-results <- map(worlds, function(w) {
-  
-  optim(
-    par     = get_start(w),
-    fn      = mslt_min_summary,
-    world   = w,
-    ground_summary = ground_summary,
-    method  = "Nelder-Mead",
-    control = list(maxit = 2000)
+                             age  = 50:100,
+                             init = NULL) {
+  # initial pars
+  pars <- tibble(
+    trans     = c("hu", "hd", "uh", "ud"),
+    intercept = c(-3.5, -7.5, -1.5, -4.5),
+    slope     = c(0.07, 0.10, -0.06, 0.08)
   )
   
-}) %>%
-  set_names(worlds)
+  # set fixed intercept
+  pars$intercept[pars$trans == fixed_trans] <- fixed_value
+  
+  # optimize remaining 3
+  free_trans <- setdiff(pars$trans, fixed_trans)
+  pars$intercept[match(free_trans, pars$trans)] <- par
+  
+  # run model
+  lt_mod <- run_mslt(pars_df = pars, age = age, init = init) %>% 
+    select(age, lx1 = lx, prevalence1 = prevalence) %>% 
+    left_join(ground_summary, by = "age") %>% 
+    mutate(loss_lx   = (lx1 - lx) ^ 2,
+           loss_prev = (prevalence1 - prevalence) ^ 2)
+  
+  # return single number to minimize
+  return(sum(lt_mod$loss_lx + lt_mod$loss_prev))
+  
+}
 
-# so, currently the problem is the no_recovery 
-# it did not converge, I think that setting recovery to 0
-# is oo much, too strong of a constraing
-# other worlds did good
-rbind(map(results, "convergence"))
-rbind(map(results, "value"))
-rbind(map(results, "message"))
+# run optim with BFGS
+result <- optim(
+  par            = ground_pars$intercept[-3],  # starting guesses for hu, hd, ud
+  fn             = mslt_min_summary,
+  fixed_trans    = "uh",
+  fixed_value    = -5,
+  ground_summary = ground_summary,
+  method         = "BFGS",
+  control        = list(maxit = 2000)
+)
 
-# obtained parameters
-map_dfr(results, "par")
+# check convergence. Converged
+result$convergence
+result$message
+
+# The loss is not zero because we attempt to reproduce 102 age-specific
+# quantities (lx and prevalence at each age) using only a small number
+# of parameters. The system is therefore overdetermined.
+# Even after optimization, an exact match is not achieved.
+result$value
 # ---------------------------------------------------------------------------- #
-# summary stats
-# exactly we can see that no_recovery did not converge 
-# while others did
-map_dfr(names(results), function(w){
+# reconstruct new parameter tibble
+reconstruct_pars <- function(result,
+                             fixed_trans = "uh",
+                             fixed_value = -5) {
   
-  pars_mod <- rebuild_pars(results[[w]]$par, w)
-  lt_mod   <- run_mslt(pars_mod, age)
+  pars <- tibble(
+    trans     = c("hu", "hd", "uh", "ud"),
+    intercept = c(-3.5, -7.5, -1.5, -4.5),
+    slope     = c(0.07, 0.10, -0.06, 0.08)
+  )
   
-  lt_mod %>%
-    summarise(world = w,
-              HLE   = sum(lh),
-              ULE   = sum(lu),
-              LE    = sum(lx))
-})
+  # set fixed intercept
+  pars$intercept[pars$trans == fixed_trans] <- fixed_value
+  
+  # fill optimized intercepts
+  free_trans <- setdiff(pars$trans, fixed_trans)
+  pars$intercept[match(free_trans, pars$trans)] <- result$par
+  
+  return(pars)
+}
+# ---------------------------------------------------------------------------- #
+# here are new parameters
+new_pars <- reconstruct_pars(result,
+                             fixed_trans = "uh",
+                             fixed_value = -5)
 
-# rebuild optimized parameter tables
-optimized_pars <- map2(results,
-                       names(results),
-                       ~ rebuild_pars(.x$par, .y))
+# lets compare lifetables
+ground_lt <- run_mslt(ground_pars, age, init = NULL)
+new_lt    <- run_mslt(new_pars,    age, init = NULL)
 
-# run mslt for all worlds with new pars
-lt_worlds <- map2_dfr(optimized_pars,
-                      names(optimized_pars),
-                      ~ run_mslt(.x, age) %>%
-                        mutate(world = .y))
+# lx
+plot(ground_lt$lx)
+lines(new_lt$lx)
 
-# check prevalence
-ggplot(lt_worlds, aes(x = age, y = prevalence, color = world)) +
-  geom_line(size = 1) +
-  theme_bw() +
-  labs(title = "Prevalence by World") + 
-  theme(legend.position = "bottom")
+# prevalence
+plot(ground_lt$prevalence)
+lines(new_lt$prevalence)
 
-# mortality risk ratios
-lt_worlds %>% 
-  ggplot(aes(x = age, y = Ra, color = world)) +
-  geom_line(size = 1) +
-  theme_bw() +
-  labs(title = "Mortality Risk Ratio (Ra) by World") + 
-  theme(legend.position = "bottom")
+# sums are similar, but not exact due to age identifiability
+# too many values to be modeled with too little parameters
+sum(ground_lt$lx) + sum(ground_lt$prevalence)
+sum(new_lt$lx)    + sum(new_lt$prevalence)
