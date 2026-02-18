@@ -5,7 +5,7 @@ library(janitor)
 library(mgcv)
 
 # R.utils::gunzip("nhis_00002.dat.gz", remove = FALSE)
-ddi         <- read_ipums_ddi("dat_ipums/nhis_00002.xml")
+ddi         <- read_ipums_ddi("nhis_00002.xml")
 data        <- read_ipums_micro(ddi)
 names(data) <- tolower(names(data))
 # ipums_view(ddi)
@@ -248,4 +248,5 @@ full_dt <- full_dt_mort %>%
 
 # save
 full_dt|> 
+  filter(cause!="hyp2time") |> 
   write_csv("nhis_results.csv")

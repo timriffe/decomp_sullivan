@@ -2,17 +2,20 @@ library(ipumsr)
 library(tidyverse)
 library(janitor)
 library(mgcv)
+library(MortalitySmooth)
 
 ddi         <- read_ipums_ddi("nhis_00002.xml")
 data        <- read_ipums_micro(ddi)
 names(data) <- tolower(names(data))
 
 fit_data <- expand_grid(age = 18:85,
-                        pop = 1, 
-                        year = 2010:2018)
+                        pop = 1)
 
 # HMD
-hmd_ded <- read_table("Deaths_1x1.txt", skip = 1, col_names = TRUE) %>% 
+
+hmd_ded <- HMDHFDplus::readHMDweb("USA","Deaths_1x1", 
+                                  username = Sys.getenv("us"), 
+                                  password = Sys.getenv("pw")) %>% 
   filter(between(Year, 2010, 2018)) %>% 
   dplyr::select(-Total) %>% 
   pivot_longer(c(Male, Female), 
@@ -20,7 +23,9 @@ hmd_ded <- read_table("Deaths_1x1.txt", skip = 1, col_names = TRUE) %>%
                values_to = "dx") %>%
   set_names(tolower(names(.)))
 
-hmd_pop <- read_table("Population.txt", skip = 1, col_names = TRUE) %>% 
+hmd_pop <- HMDHFDplus::readHMDweb("USA","Exposures_1x1", 
+                                  username = Sys.getenv("us"), 
+                                  password = Sys.getenv("pw")) %>% 
   filter(between(Year, 2010, 2018)) %>% 
   dplyr::select(-Total) %>% 
   pivot_longer(c(Male, Female), 
@@ -30,43 +35,37 @@ hmd_pop <- read_table("Population.txt", skip = 1, col_names = TRUE) %>%
 
 hmd <- hmd_ded %>% 
   full_join(hmd_pop) %>% 
-  mutate(age = parse_number(age),
-         age = ifelse(age > 84, 85, age)) %>% 
+  mutate(age = ifelse(age > 84, 85, age)) %>% 
   group_by(year, sex, age) %>% 
   summarise(dx = sum(dx),
             pop = sum(pop),
             .groups = "drop")
 
+# Smooth HMD mortality using P-splines approach of Camarda 2012.
+# lambda = 100 is quite low, so we should preserve major features;
+# any anomalies <20 or <90 aren't problematic for our analysis
+hmd_s <-
+  hmd |> 
+  group_by(year, sex) |> 
+  mutate(mx_raw = dx / pop,
+         mx = Mort1Dsmooth(x = age, y = dx, lambda = 100,offset = log(pop), method = 3)$logmortality |> exp())
 
-smooth_hmd <- function(.data) { 
-  
-  model <- gam(dx ~ s(age, bs = "ps") + year + offset(log(pop)),
-               data = .data,
-               family = quasipoisson)
-  
-  # Predict the smoothed population counts
-  pred <- predict(model, fit_data, type = "response")
-  
-  final <- fit_data %>%
-    mutate(mx = pred) %>%
-    dplyr::select(-pop)
-  
-  return(final)
-  
-}
 
-hmd_s <- hmd %>% 
-  group_nest(sex) %>%
-  mutate(data = map(data, ~ .x %>%
-                      smooth_hmd)) %>%
-  unnest(data)
-
+# problematic ratios are truncated out anyway for our analysis
+hmd_s |> 
+  mutate(ratio = mx / mx_raw) |> 
+  ggplot(aes(x = age, y= ratio, color = as.factor(year))) + 
+  geom_line() +
+  facet_wrap(~sex) +
+  scale_y_log10()
 
 hmd_s %>% 
-  mutate(year = as.factor(year)) %>% 
-  ggplot(aes(x = age, y = mx, color = year))+
+  filter(year %% 5 == 0) |> 
+  ggplot(aes(x = age, y = mx))+
   geom_line()+ 
-  facet_wrap(~sex)
+  facet_wrap(year~sex) +
+  scale_y_log10() +
+  geom_point(mapping = aes(y = mx_raw), alpha = .3)
 
 # mortality
 nhis_dat <- data %>%
@@ -146,16 +145,34 @@ dt_fit <- expand_grid(year = unique(pop1$year),
 dt_fit_pop <- expand_grid(year = unique(pop1$year),
                           age = 18:85)
 
+# test this concept
+dx <- hmd_s |> filter(year == 2015, sex == "Female") |> pull(dx)
+pop <- hmd_s |> filter(year == 2015, sex == "Female") |> pull(pop)
+age <- hmd_s |> filter(year == 2015, sex == "Female") |> pull(age)
+
+
+
+mort1d_sm_pred <- function(age, dx, pop){
+  
+  dx[is.na(dx)] = 0
+
+  mod = Mort1Dsmooth(x = age, 
+                     y = dx, 
+                     lambda = 5e4,
+                     offset = log(pop), 
+                     method = 3)
+  mx  = predict(mod, age = 18:85) |> exp()
+  # plot(18:85, mx, log = 'y')
+  out = tibble(age = 18:85, mx = mx)
+  out
+}
+
 # smoothing function
 smoothit <- function(.data) { 
   
   model <- gam(d ~ s(age, bs = "ps") + year + offset(log(pop)),
                data = .data,
                family = quasipoisson)
-  
-  model_p <- gam(pop ~ s(age, bs = "ps") + year, 
-                 data = .data, 
-                 family = quasipoisson)
   
   # Predict the smoothed population counts
   smoothed_pop <- predict(model_p, dt_fit_pop, type = "response")
@@ -168,6 +185,12 @@ smoothit <- function(.data) {
   return(final)
   
 }
+
+pop1 |> 
+  full_join(dead, by = join_by(year, sex, age, cause, val)) |> 
+  #filter(sex == "Female", cause == "cancerev", year == 2015, val == "No")
+  group_nest(sex, cause, val, year) |> 
+  reframe(~mort1d_sm_pred(age = age,dx=d,pop=pop))
 
 full <- pop1 %>% 
   full_join(dead) %>%
@@ -189,7 +212,7 @@ z <- full %>%
   pivot_wider(names_from = val,
               values_from = c(mx, pop)) %>%
   dplyr::select(-pop_No) %>% 
-  rename(prev = pop_Yes) %>%
+  rename(prev = pop_Yes) 
   full_join(hmd_s, by = c("year", "age", "sex")) %>% 
   mutate(
     Ra         = mx_Yes / mx_No,
