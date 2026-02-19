@@ -347,3 +347,10 @@ lt_chosen |>
   facet_wrap(~trans, scales = "free_y") + 
   theme_minimal() +
   labs(title = "Variety in transitions over worlds")
+
+# save world parameters (minimal representation)
+
+bind_rows(theta_chosen) |> 
+  mutate(system = system_chosen,
+         world = 1:n(), .before=1) |> 
+  write_csv("data/worlds_octet.csv")
