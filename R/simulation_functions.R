@@ -683,3 +683,191 @@ select_farthest <- function(D, k, start = 1) {
   }
   sel
 }
+
+# redux of previous work to derive no-returns worlds
+# using an Rx (or Ra) assumption.
+# -----------------------------------------------------------------------------
+# --------- (3) Derive no-returns hazards from lx, prevalence, and Rx ----------
+# Discrete-time (interval) solver consistent with P = expm(Q * age_int).
+#
+# Goal: Given target lx(x) and prevalence pi(x), plus an assumed hazard ratio
+#       Rx(x) = ud(x) / hd(x), construct a no-returns CTMC (uh = 0) such that
+#       the one-step update using expm matches BOTH:
+#         lx(x+dt) and lu(x+dt) = pi(x+dt)*lx(x+dt)
+#
+# Unknowns per age interval: hd(x) and hu(x) (with ud(x)=Rx(x)*hd(x), uh(x)=0).
+# We solve using nested 1D root-finds:
+#   - inner: choose hd to match total survivorship at x+dt
+#   - outer: choose hu so that (with that hd) we match lu at x+dt
+#
+# This avoids prevalence-derivative approximations and typically yields
+# essentially exact fits (up to root tolerance).
+# -----------------------------------------------------------------------------
+derive_noreturns_hazards <- function(age,
+                                     lx,
+                                     prev,
+                                     Rx,
+                                     age_int = 1,
+                                     min_haz = 1e-12,
+                                     # root finding controls
+                                     tol = 1e-10,
+                                     maxiter = 100,
+                                     # brackets (expanded automatically if needed)
+                                     hu_bracket = c(1e-12, 5),
+                                     hd_bracket = c(1e-12, 5),
+                                     verbose = TRUE) {
+  
+  age <- as.numeric(age)
+  n <- length(age)
+  if (n < 2) stop("Need at least 2 ages.", call. = FALSE)
+  
+  lx <- as.numeric(lx)
+  if (length(lx) != n) stop("lx must have same length as age.", call. = FALSE)
+  
+  prev <- as.numeric(prev)
+  if (length(prev) != n) stop("prev must have same length as age.", call. = FALSE)
+  
+  # Rx can be scalar or vector
+  if (length(Rx) == 1) Rx <- rep(as.numeric(Rx), n)
+  Rx <- as.numeric(Rx)
+  if (length(Rx) != n) stop("Rx must be length 1 or length(age).", call. = FALSE)
+  
+  # target state occupancies
+  lu_tgt <- prev * lx
+  lh_tgt <- lx - lu_tgt
+  
+  # numeric safety
+  Rx <- pmax(Rx, min_haz)
+  lx <- pmax(lx, min_haz)
+  lu_tgt <- pmin(pmax(lu_tgt, 0), lx)
+  lh_tgt <- pmax(lh_tgt, 0)
+  
+  # helper: build P given hu, hd, Rx at this age
+  make_P <- function(hu, hd, Rx_i, dt) {
+    ud <- Rx_i * hd
+    uh <- min_haz # effectively zero returns
+    Q <- matrix(c(
+      -(hu + hd),  hu,  hd,
+      uh, -(uh + ud), ud,
+      0, 0, 0
+    ), nrow = 3, byrow = TRUE)
+    expm::expm(Q * dt)
+  }
+  
+  # helper: propagate one step from (H,U) using P
+  step_forward <- function(H, U, P) {
+    v_next <- c(H, U, 0) %*% P
+    c(H = as.numeric(v_next[1]), U = as.numeric(v_next[2]))
+  }
+  
+  # storage for hazards at each start-age
+  hu <- rep(NA_real_, n)
+  hd <- rep(NA_real_, n)
+  ud <- rep(NA_real_, n)
+  uh <- rep(min_haz, n)
+  
+  # solve interval-by-interval
+  for (i in 1:(n - 1)) {
+    
+    H0 <- lh_tgt[i]
+    U0 <- lu_tgt[i]
+    
+    # If everyone is dead (or almost), just carry tiny hazards
+    if ((H0 + U0) <= min_haz) {
+      hu[i] <- min_haz; hd[i] <- min_haz; ud[i] <- Rx[i] * hd[i]
+      next
+    }
+    
+    S1_tgt <- lx[i + 1]
+    U1_tgt <- lu_tgt[i + 1]
+    
+    # inner solver: for given hu, find hd that matches S1_tgt
+    solve_hd_given_hu <- function(hu_i) {
+      f_hd <- function(hd_i) {
+        P <- make_P(hu = hu_i, hd = hd_i, Rx_i = Rx[i], dt = age_int)
+        nxt <- step_forward(H0, U0, P)
+        (nxt["H"] + nxt["U"]) - S1_tgt
+      }
+      
+      # bracket expansion if needed
+      lo <- hd_bracket[1]; hi <- hd_bracket[2]
+      f_lo <- f_hd(lo); f_hi <- f_hd(hi)
+      
+      k <- 0
+      while (is.finite(f_lo) && is.finite(f_hi) && f_lo * f_hi > 0 && k < 30) {
+        hi <- hi * 2
+        f_hi <- f_hd(hi)
+        k <- k + 1
+      }
+      if (!is.finite(f_lo) || !is.finite(f_hi) || f_lo * f_hi > 0) return(NA_real_)
+      
+      uniroot(f_hd, lower = lo, upper = hi, tol = tol, maxiter = maxiter)$root
+    }
+    
+    # outer solver: choose hu so that U1 matches U1_tgt (with hd chosen to match survival)
+    f_hu <- function(hu_i) {
+      hd_i <- solve_hd_given_hu(hu_i)
+      if (!is.finite(hd_i)) return(NA_real_)
+      
+      P <- make_P(hu = hu_i, hd = hd_i, Rx_i = Rx[i], dt = age_int)
+      nxt <- step_forward(H0, U0, P)
+      nxt["U"] - U1_tgt
+    }
+    
+    # bracket expansion for hu
+    lo <- hu_bracket[1]; hi <- hu_bracket[2]
+    f_lo <- f_hu(lo); f_hi <- f_hu(hi)
+    
+    k <- 0
+    while (is.finite(f_lo) && is.finite(f_hi) && f_lo * f_hi > 0 && k < 30) {
+      hi <- hi * 2
+      f_hi <- f_hu(hi)
+      k <- k + 1
+    }
+    
+    if (!is.finite(f_lo) || !is.finite(f_hi) || f_lo * f_hi > 0) {
+      if (verbose) {
+        warning(
+          sprintf("Could not bracket hu root at age=%s (interval %s->%s). Using min_haz.",
+                  age[i], age[i], age[i + 1]),
+          call. = FALSE
+        )
+      }
+      hu[i] <- min_haz
+      hd[i] <- solve_hd_given_hu(hu[i])
+      if (!is.finite(hd[i])) hd[i] <- min_haz
+      ud[i] <- Rx[i] * hd[i]
+      next
+    }
+    
+    hu_i <- uniroot(f_hu, lower = lo, upper = hi, tol = tol, maxiter = maxiter)$root
+    hd_i <- solve_hd_given_hu(hu_i)
+    if (!is.finite(hd_i)) hd_i <- min_haz
+    
+    hu[i] <- pmax(hu_i, min_haz)
+    hd[i] <- pmax(hd_i, min_haz)
+    ud[i] <- pmax(Rx[i] * hd[i], min_haz)
+  }
+  
+  # last age: 1-step extrapolation; these don't affect prev or lx matching.
+  extrap_last <- function(x) {
+    if (is.finite(x[n-1]) && is.finite(x[n-2]) && x[n-1] > 0 && x[n-2] > 0) {
+      exp(2*log(x[n-1]) - log(x[n-2]))  # log-linear extrapolation
+    } else if (is.finite(x[n-1])) {
+      x[n-1]
+    } else {
+      min_haz
+    }
+  }
+  
+  hu[n] <- pmax(extrap_last(hu), min_haz)
+  hd[n] <- pmax(extrap_last(hd), min_haz)
+  ud[n] <- pmax(extrap_last(ud), min_haz)
+  uh[n] <- min_haz
+  
+  tibble::tibble(
+    age = rep(age, times = 4),
+    trans = rep(c("hu", "hd", "ud", "uh"), each = n),
+    hazard = c(hu, hd, ud, uh)
+  )
+}

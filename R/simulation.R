@@ -179,60 +179,98 @@ theta_ret <- polish_many(
 )
 
 # ---------
-# (3) NO-RETURNS system: force UH ~ 0 and repeat
+# ---------
+# (3) NO-RETURNS system: derive hazards directly from Rx picked by eyeballing
 # ---------
 
-uh_log <- log(1e-12)
-fixed_noreturn <- c(i_uh = uh_log, s1_uh = 0, s2_uh = 0)
+# 1) Plot Rx(age) = ud/hd for the chosen RETURNS worlds (from Section 4)
+Rx_plot_df <-
+  haz_chosen |>
+  dplyr::filter(system == "returns", trans %in% c("hd","ud")) |>
+  tidyr::pivot_wider(names_from = trans, values_from = hazard) |>
+  dplyr::mutate(Rx = ud / hd) |>
+  dplyr::select(age, world, Rx)
 
-free_noreturn <- setdiff(free_returns, names(fixed_noreturn))
+ggplot2::ggplot(Rx_plot_df, ggplot2::aes(x = age, y = Rx, color = as.factor(world))) +
+  ggplot2::geom_line() +
+  ggplot2::labs(color = "returns world", y = "Rx = ud/hd")
 
-# base pars for no-return: start from ground but enforce UH fixed
-base_nr <- ground_pars_pw
-base_nr[names(fixed_noreturn)] <- fixed_noreturn
+# 2) YOU set these after eyeballing the plot:
+#    - which returns worlds supply Rx (usually 2 worlds: low/high)
+#    - which world IDs in the final set you want to become no-returns
+Rx_source_worlds <- c(3, 4)  # <-- change after eyeballing
+nr_world_ids     <- c(1, 6)  # <-- which worlds to replace with no-returns
 
-nd_nr <- find_null_directions(
-  base_pars  = base_nr,
-  free_names = free_noreturn,
-  age = age,
-  init = init,
-  age_int = age_int,
-  knot_age = knot_age,
-  outputs = c("lx","prevalence"),
-  tol = 1e-3,
-  eps = 1e-4
-)
+stopifnot(length(Rx_source_worlds) == length(nr_world_ids))
 
-V2_nr <- nd_nr$directions[, 1:2, drop = FALSE]
-
-cand_nr <- make_candidates(base_nr, free_noreturn, V2_nr, step_grid)
-
-# Enforce UH fixed in each candidate and ridge polish remaining parameters
-cand_nr_theta0 <- purrr::map(cand_nr$theta0, function(th) {
-  th[names(fixed_noreturn)] <- fixed_noreturn
-  th
+# 3) Derive no-return hazards from those Rx curves (machine-precise match to lx & prev)
+haz_nr_list <- purrr::map2(Rx_source_worlds, nr_world_ids, function(src_w, out_w) {
+  
+  Rx_vec <- Rx_plot_df |>
+    dplyr::filter(world == src_w) |>
+    dplyr::arrange(age) |>
+    dplyr::pull(Rx)
+  
+  derive_noreturns_hazards(
+    age  = ground_summary$age,
+    lx   = ground_summary$lx,
+    prev = ground_summary$prevalence,
+    Rx   = Rx_vec,
+    age_int = age_int,
+    verbose = FALSE
+  ) |>
+    dplyr::mutate(world = out_w, system = "noreturn")
 })
 
-theta_nr <- polish_many(
-  theta0_list = cand_nr_theta0,
-  ground_summary = ground_summary,
-  free_polish = free_noreturn,
-  fixed = fixed_noreturn,
-  lambda = lambda,
-  lambda_kink = lambda_kink,
-  slope_floor = 1e-6
-)
+haz_nr <- dplyr::bind_rows(haz_nr_list)
+
+# 4) Replace the selected world IDs with their no-return versions
+#    (i.e., drop those returns worlds and bind no-returns in)
+haz_chosen <-
+  haz_chosen |>
+  dplyr::filter(!(system == "returns" & world %in% nr_world_ids)) |>
+  dplyr::bind_rows(haz_nr) |>
+  dplyr::arrange(world, trans, age)
+
+# optional quick check plot
+haz_chosen |>
+  ggplot2::ggplot(ggplot2::aes(x = age, y = hazard, color = as.factor(world))) +
+  ggplot2::geom_line() +
+  ggplot2::facet_wrap(~trans, scales = "free_y") +
+  ggplot2::labs(color = "world")
+
+# export
+readr::write_csv(haz_chosen, "data/haz_octet.csv.gz")
+
 
 # ---------
 # (4) Combine, score fit, then select 5-8 diverse worlds
 
-theta_all <- c(theta_ret, theta_nr)
-system_all <- c(rep("returns", length(theta_ret)), rep("noreturn", length(theta_nr)))
+# Combine returns (thetas) + noreturns (hazards/lt)
+n_ret <- length(theta_ret)
+n_nr  <- length(haz_nr)
 
-fit_tab <- purrr::imap_dfr(theta_all, function(th, i) {
+system_all <- c(rep("returns", n_ret), rep("noreturn", n_nr))
+
+# score returns via existing score_fit()
+fit_ret <- purrr::imap_dfr(theta_ret, function(th, i) {
   score_fit(th, ground_summary, age, init=init, age_int=age_int, knot_age=knot_age) |>
-    mutate(pert = i, system = system_all[i])
+    mutate(pert = i, system = "returns")
 })
+
+# score noreturns directly from their lt objects
+fit_nr <- purrr::imap_dfr(lt_nr, function(lt, j) {
+  tibble::tibble(
+    rmse_lx   = sqrt(mean((lt$lx - ground_summary$lx)^2)),
+    rmse_prev = sqrt(mean((lt$prevalence - ground_summary$prevalence)^2)),
+    maxabs_lx   = max(abs(lt$lx - ground_summary$lx)),
+    maxabs_prev = max(abs(lt$prevalence - ground_summary$prevalence))
+  ) |>
+    mutate(pert = n_ret + j, system = "noreturn")
+})
+
+fit_tab <- dplyr::bind_rows(fit_ret, fit_nr)
+
 
 # had to eyeball limits. No returns-systems are harder to match
 keep <- fit_tab |>
@@ -244,8 +282,33 @@ theta_keep  <- theta_all[keep_ids]
 system_keep <- system_all[keep_ids]
 
 # Diversity distance on stacked log hazards
-H <- do.call(rbind, lapply(theta_keep, haz_matrix, age=age, age_int=age_int, knot_age=knot_age))
+# Build hazard feature matrix for both systems
+haz_matrix_from_haz <- function(haz_df) {
+  haz_df |>
+    dplyr::mutate(loghaz = log(hazard)) |>
+    dplyr::arrange(trans, age) |>
+    dplyr::pull(loghaz)
+}
+
+# keep objects
+keep_ids <- keep$pert
+
+theta_keep <- theta_ret[keep_ids[keep_ids <= n_ret]]
+nr_keep_ids <- keep_ids[keep_ids > n_ret] - n_ret
+
+haz_keep <- c(
+  lapply(theta_keep, function(th) expand_hazards(th, age=age, age_int=age_int, knot_age=knot_age)),
+  haz_nr[nr_keep_ids]
+)
+
+system_keep <- c(
+  rep("returns", length(theta_keep)),
+  rep("noreturn", length(nr_keep_ids))
+)
+
+H <- do.call(rbind, lapply(haz_keep, haz_matrix_from_haz))
 D <- as.matrix(dist(H))
+
 
 # Seed selection: one noreturn + one returns if available
 idx_nr <- which(system_keep == "noreturn")
@@ -281,8 +344,9 @@ if (K_noreturn_min > 0) {
 }
 
 chosen_ids    <- keep_ids[sel]
-theta_chosen  <- theta_all[chosen_ids]
-system_chosen <- system_all[chosen_ids]
+haz_chosen   <- haz_keep[sel]
+sys_chosen    <- system_keep[sel]
+
 
 # here they are
 print(fit_tab |> 
@@ -333,8 +397,8 @@ haz_chosen |>
   filter(trans %in% c("hd","ud")) |> 
   pivot_wider(names_from=trans,values_from=hazard) |> 
   mutate(Ra = ud / hd) |> 
-  ggplot(aes(x=age,y=Ra,color = as.factor(world))) +
-  geom_line() +
+  ggplot(aes(x=age,y=Ra,color = as.factor(world), linetype = system)) +
+  geom_line(linewidth=1.2) +
   ylim(1,80) +
   labs(title = "Risk ratios for different worlds")  +
   theme_minimal()
@@ -354,3 +418,43 @@ bind_rows(theta_chosen) |>
   mutate(system = system_chosen,
          world = 1:n(), .before=1) |> 
   write_csv("data/worlds_octet.csv")
+
+
+# -------------------------------------- #
+# redux for no-returns to get exact fits
+# -------------------------------------- #
+Ra_ssumptions <-
+haz_chosen |> 
+  filter(trans %in% c("hd","ud"),
+         world %in% c(3,4)) |> 
+  pivot_wider(names_from=trans,values_from=hazard) |> 
+  mutate(Ra = ud / hd) 
+
+
+haz1 <- derive_noreturns_hazards(ground_summary$age, 
+                         lx = ground_summary$lx,
+                         prev = ground_summary$prevalence,
+                         Rx = Ra_ssumptions |> filter(world == 3) |> pull(Ra))|> 
+  mutate(world = 1,
+         system = "noreturn")
+
+
+haz2 <- derive_noreturns_hazards(ground_summary$age, 
+                                 lx = ground_summary$lx,
+                                 prev = ground_summary$prevalence,
+                                 Rx = Ra_ssumptions |> filter(world == 4) |> pull(Ra))|> 
+  mutate(world = 6,
+         system = "noreturn")
+
+haz_chosen <-
+  haz_chosen |> 
+  filter(system == "returns") |> 
+  bind_rows(haz1) |> 
+  bind_rows(haz2)
+
+write_csv(haz_chosen,"data/haz_octet.csv.gz")
+
+haz_chosen |> 
+  ggplot(aes(x=age,y=hazard,color = as.factor(world))) +
+  geom_line() +
+  facet_wrap(~trans)
