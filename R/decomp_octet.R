@@ -9,6 +9,18 @@ source("R/simulation_functions.R")
 octet <- read_csv("data/haz_octet.csv.gz")
 head(octet)
 
+mslt <-
+octet |> 
+  filter(world == 5) |> 
+  haz_to_probs(age = 0:100, age_int = 1) |> 
+  calculate_lt( init =  c(H=1,U=0), age_int = 1)
+  
+mslt |> 
+  summarize(hle = sum((1-prevalence)*lx),
+            hle_ms = sum(lh),
+            d = hle - hle_ms)
+head(mslt)
+
 noreturns <- octet |> filter(system == "noreturn")
 
 
