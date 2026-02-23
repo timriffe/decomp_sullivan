@@ -1,3 +1,10 @@
+# desired update, because decompositions do not yet sum to 0.
+# 1) try different lambda for more precision
+# 2) try adding HLE to loss function
+# 3) replace pwlinear w curve (also 3 parameters). expand_hazards() should
+# have 3 options, and this requires lots of interventions.
+
+
 # ------------------------------------------------------------------------------
 # simulation_functions2.R (redux)
 #
