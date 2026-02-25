@@ -30,10 +30,8 @@
 # (6) finally, rather than log linear hazards, I went with piecewise log linear
 #     just so that the no-returns worlds would fit prevalence a bit better.
 # We end up with 8 total worlds. Which could be called Octavio's Octet...
-library(dplyr)
-library(tidyr)
-library(purrr)
-library(ggplot2)
+library(tidyverse)
+
 
 source("R/simulation_functions.R")
 
@@ -46,7 +44,7 @@ age_int  <- 1
 knot_age <- 75 # for piecewise log linear hazards
 init     <- c(H=1, U=0) # just keep this simple
 
-lambda      <- 0.3   # ridge toward each candidate (identity preservation)
+lambda      <- 0.03   # ridge toward each candidate (identity preservation)
 # smaller = better fit to lx and prev; larger (closer to 1)
 # respects the null direction parameters more.
 lambda_kink <- 1.0   # tame curvature: penalize (s2 - s1)^2; set 0 for fully free kink
@@ -334,3 +332,13 @@ haz_chosen |>
 
 # Save worlds
 write_csv(haz_chosen, "data/haz_octet.csv.gz")
+
+
+# but we need to compare hle, ideally with residual < .001
+hle_sullivan <-lt_chosen |> 
+  group_by(world) |> 
+  summarize(hle_sullivan = sum((1-prevalence) * lx),
+            hle_mslt = sum(lh)) |> 
+  pull(hle_sullivan)
+hle_sullivan - hle_sullivan[5]
+
