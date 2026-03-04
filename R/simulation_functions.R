@@ -188,7 +188,7 @@ run_mslt <- function(pars,
   haz <- expand_hazards(pars, age = age, age_int = age_int, haz_shape = haz_shape,
                         pivot_age = pivot_age, shape_width = shape_width)
   P   <- haz_to_probs(haz, age = age, age_int = age_int)
-  calculate_lt(P, init = init)
+  calculate_lt(P, init = init, age_int = age_int)
 }
 
 mslt_summary_vector <- function(pars,
@@ -813,7 +813,7 @@ haz_to_probs <- function(hazard, age, age_int = 1) {
   out
 }
 
-calculate_lt <- function(P, init = c(H = 1, U = 0)) {
+calculate_lt <- function(P, init = c(H = 1, U = 0), age_int = 1) {
   P |>
     tidyr::pivot_longer(-c(age, from), names_to = "to", values_to = "p") |>
     dplyr::filter(.data$from != "D") |>
@@ -836,7 +836,7 @@ calculate_lt <- function(P, init = c(H = 1, U = 0)) {
     dplyr::mutate(
       prevalence = .data$lu / (.data$lh + .data$lu),
       lx         = .data$lh + .data$lu,
-      Lx         = (.data$lx + dplyr::lead(.data$lx, default = 0)) / 2
+      Lx         = age_int * (.data$lx + dplyr::lead(.data$lx, default = 0)) / 2
     )
 }
 
@@ -1011,253 +1011,224 @@ derive_noreturns_hazards <- function(age,
 
 
 # ---------
-# (1b) Exact RETURNS derivation from Rx(age) and Sullivan targets
-# ---------
-# Given:
-#   - Sullivan targets: lx(age) and prevalence(age) for ages in `age`
-#   - An age-specific risk ratio curve Rx(age) = ud/hd (hazard ratio)
-#
-# We can derive:
-#   mx(age) from lx via mx = -log(lx_{x+1}/lx_x)/dt
-#   hd, ud from mx, prev, Rx:  hd = mx / ( (1-prev) + prev*Rx ),  ud = Rx * hd
-#
-# Then, for each age interval, solve for (hu, uh) such that:
-#   [lH_x, lU_x, lD_x] %*% expm(Q(hu,hd,uh,ud)*dt) matches [lH_{x+1}, lU_{x+1}, *]
-# where lH = lx*(1-prev), lU = lx*prev.
-#
-# This yields machine-precision matching of lx and prevalence by construction.
-# Smoothness: the per-age solutions can be "wiggly" if Rx forces it; providing
-# good starting values (hu_start/uh_start) and mild `smooth_w` can help.
-derive_returns_hazards_from_Rx <- function(age,
-                                           lx,
-                                           prev,
-                                           Rx,
-                                           age_int = 1,
-                                           bounds = c(1e-12, 5),
-                                           # Optional per-transition bounds. Each can be:
-                                           # - NULL (use `bounds`)
-                                           # - numeric length 2 (lb, ub)
-                                           # - matrix/data.frame with nrow==length(age) and 2 columns (lb, ub)
-                                           hu_bounds = NULL,
-                                           uh_bounds = NULL,
-                                           # per-age optimizer controls
-                                           maxit = 300,
-                                           reltol = 1e-12,
-                                           # starting values (scalar or vector length(age))
-                                           hu_start = NULL,
-                                           uh_start = NULL,
-                                           # Back-compat alias: if provided, overrides *_start
-                                           hu_0 = NULL,
-                                           uh_0 = NULL,
-                                           # penalties (set to 0 to disable)
-                                           smooth_w = 0,          # penalize first differences in log hazards
-                                           curvature_w = 0,       # penalize difference in 2nd differences vs starting values
-                                           bound_w  = 0,          # penalize proximity to bounds to avoid sticking
-                                           turnover_K = 1.2,      # max turnover multiplier for (hu+uh) vs (hu0+uh0)
-                                           turnover_w = 0,        # penalize exceeding turnover cap (soft constraint)
-                                           # safeguard: if expm blows up, return huge loss
-                                           huge = 1e30,
-                                           verbose = FALSE) {
+derive_returns_hazards_from_Rx <- function(
+    age,
+    lx,
+    prev,
+    Rx,
+    age_int = 1,
+    bounds = c(1e-12, 2),
+    hu_bounds = NULL,
+    uh_bounds = NULL,
+    maxit = 500,           # accepted for back-compat; unused
+    reltol = 1e-14,        # accepted for back-compat; unused
+    hu_0,
+    uh_0,
+    smooth_w = 0.5,        # accepted; unused
+    curvature_w = 0.5,     # accepted; unused
+    bound_w  = 1e-3,       # accepted; unused
+    turnover_K = 1.2,
+    turnover_w = 1e4,      # accepted; unused
+    fit_w = 1e6,           # accepted; unused
+    solver = c("project"), # accepted; unused (always projection+refine)
+    snap_tol = 1e-20,      # diagnostic only
+    verbose = FALSE,
+    # snapper controls
+    eps_log = 1e-2,
+    tiny = 1e-14,
+    line_tol = 1e-12,
+    # NEW: numerical tighten + last-age behaviour
+    final_refine = TRUE,
+    refine_tol = 1e-16,
+    refine_dist_w = 1e-6,
+    extrap_last_age = TRUE
+){
   
-  age0 <- as.integer(age)
-  n <- length(age0)
-  if (n < 2) stop("age must have length >= 2.", call. = FALSE)
-  if (length(lx) != n || length(prev) != n || length(Rx) != n) {
-    stop("lx, prev, Rx must have same length as age.", call. = FALSE)
-  }
+  solver <- match.arg(solver)
   
-  lx   <- as.numeric(lx)
-  prev <- as.numeric(prev)
-  Rx   <- as.numeric(Rx)
+  n <- length(age)
+  stopifnot(length(lx) == n, length(prev) == n, length(Rx) == n,
+            length(hu_0) == n, length(uh_0) == n)
   
-  if (any(!is.finite(lx)) || any(lx <= 0)) stop("lx must be finite and > 0.", call. = FALSE)
-  if (any(!is.finite(prev)) || any(prev < 0) || any(prev > 1)) stop("prev must be in [0,1].", call. = FALSE)
-  if (any(!is.finite(Rx)) || any(Rx <= 0)) stop("Rx must be finite and > 0.", call. = FALSE)
-  
-  # stocks
-  lH <- lx * (1 - prev)
-  lU <- lx * prev
-  lD <- 1 - lx
-  
-  # mx hazard from lx (constant hazard over interval)
-  lx_next <- dplyr::lead(lx)
-  mx <- -log(pmax(1e-15, lx_next / lx)) / age_int
-  mx[n] <- mx[n - 1]  # last interval irrelevant for last observed lx/prev
-  
-  # derive hd, ud from Rx and mx using prev at exact ages (your identity)
-  denom <- pmax(1e-12, (1 - prev) + prev * Rx)
-  hd <- mx / denom
-  ud <- Rx * hd
-  
-  
-  # helpers
-  .as_bounds_mat <- function(b, n, fallback) {
-    if (is.null(b)) {
-      mat <- matrix(rep(fallback, each = n), ncol = 2, byrow = TRUE)
-      return(mat)
-    }
-    if (is.numeric(b) && length(b) == 2) {
-      mat <- matrix(rep(b, each = n), ncol = 2, byrow = TRUE)
-      return(mat)
-    }
-    if (is.data.frame(b) || is.matrix(b)) {
-      b <- as.matrix(b)
-      if (nrow(b) != n || ncol(b) != 2) stop("bounds matrices must have nrow==length(age) and 2 columns.", call. = FALSE)
-      return(b)
-    }
-    stop("bounds must be NULL, numeric length 2, or an n x 2 matrix/data.frame.", call. = FALSE)
-  }
-  hu_bnd <- .as_bounds_mat(hu_bounds, n, bounds)
-  uh_bnd <- .as_bounds_mat(uh_bounds, n, bounds)
-  
-  clamp_hu <- function(z, i) pmin(hu_bnd[i, 2], pmax(hu_bnd[i, 1], z))
-  clamp_uh <- function(z, i) pmin(uh_bnd[i, 2], pmax(uh_bnd[i, 1], z))
-  
-  
-  make_start <- function(x, default) {
-    if (is.null(x)) return(rep(default, n))
-    x <- as.numeric(x)
-    if (length(x) == 1) return(rep(x, n))
-    if (length(x) != n) stop("start vectors must have length(age) or length 1.", call. = FALSE)
-    x
-  }
-  # allow explicit *_0 aliases (requested); these determine turnover caps and curvature targets
-  if (!is.null(hu_0)) hu_start <- hu_0
-  if (!is.null(uh_0)) uh_start <- uh_0
-  
-  hu_base_raw <- make_start(hu_start, default = 1e-3)
-  uh_base_raw <- make_start(uh_start, default = 1e-3)
-  
-  # clamp base starts to per-age bounds
-  hu_base <- vapply(seq_len(n), function(i) clamp_hu(hu_base_raw[i], i), numeric(1))
-  uh_base <- vapply(seq_len(n), function(i) clamp_uh(uh_base_raw[i], i), numeric(1))
-  
-  # working seeds (updated as we march through age)
-  hu0 <- hu_base
-  uh0 <- uh_base
-  
-  # log-space base targets for curvature regularization
-  log_base_hu <- log(pmax(hu_base, 1e-300))
-  log_base_uh <- log(pmax(uh_base, 1e-300))
-  
-  hu <- numeric(n)
-  uh <- numeric(n)
-  
-  # run per-age solve for i=1..n-1
-  for (i in seq_len(n - 1)) {
-    v <- c(H = lH[i], U = lU[i], D = lD[i])
-    targ <- c(H = lH[i + 1], U = lU[i + 1])
-    
-    # previous solutions in log-space (for smoothness + curvature penalties)
-    if (i == 1) {
-      log_prev1 <- c(log(hu0[i]), log(uh0[i]))
-      log_prev2 <- log_prev1
-    } else if (i == 2) {
-      log_prev1 <- c(log(hu[i - 1]), log(uh[i - 1]))
-      log_prev2 <- c(log(hu0[i - 1]), log(uh0[i - 1]))
-    } else {
-      log_prev1 <- c(log(hu[i - 1]), log(uh[i - 1]))
-      log_prev2 <- c(log(hu[i - 2]), log(uh[i - 2]))
-    }
-    
-    # base curvature target (2nd differences in log hazards)
-    if (curvature_w > 0 && i >= 3) {
-      d2_base <- c(
-        log_base_hu[i] - 2 * log_base_hu[i - 1] + log_base_hu[i - 2],
-        log_base_uh[i] - 2 * log_base_uh[i - 1] + log_base_uh[i - 2]
-      )
-    } else {
-      d2_base <- c(0, 0)
-    }
-    
-    # turnover cap based on provided starting values (not on the evolving solution)
-    turnover_cap <- turnover_K * (hu_base[i] + uh_base[i])
-    
-    # objective in log-space
-    obj <- function(logx) {
-      # logx = c(log_hu, log_uh)
-      hu_i <- clamp_hu(exp(logx[1]), i)
-      uh_i <- clamp_uh(exp(logx[2]), i)
-      
-      Q <- make_Q(c(hu = hu_i, hd = hd[i], uh = uh_i, ud = ud[i]))
-      
-      P <- tryCatch(expm::expm(Q * age_int), error = function(e) NULL)
-      if (is.null(P) || any(!is.finite(P))) return(huge)
-      
-      nxt <- as.numeric(v %*% P)
-      # residuals for H and U
-      rH <- nxt[1] - targ[["H"]]
-      rU <- nxt[2] - targ[["U"]]
-      loss <- rH*rH + rU*rU
-      
-      # smoothness: discourage age-to-age jaggedness in log hazards
-      if (smooth_w > 0) {
-        loss <- loss + smooth_w * sum((logx - log_prev1)^2)
-      }
-      
-      # curvature similarity: match 2nd differences in log hazards to those of starting values
-      if (curvature_w > 0 && i >= 3) {
-        d2 <- logx - 2 * log_prev1 + log_prev2
-        loss <- loss + curvature_w * sum((d2 - d2_base)^2)
-      }
-      
-      # turnover cap: discourage hu+uh from exceeding K*(hu0+uh0) at each age
-      if (turnover_w > 0) {
-        over <- (hu_i + uh_i) - turnover_cap
-        if (is.finite(over) && over > 0) {
-          loss <- loss + turnover_w * over * over
-        }
-      }
-      
-      # bound avoidance (keeps away from hard clamps; optional)
-      if (bound_w > 0) {
-        # penalize closeness to bounds in log-space
-        eps <- 1e-12
-        hu_scaled <- (hu_i - hu_bnd[i, 1]) / (hu_bnd[i, 2] - hu_bnd[i, 1] + eps)
-        uh_scaled <- (uh_i - uh_bnd[i, 1]) / (uh_bnd[i, 2] - uh_bnd[i, 1] + eps)
-        # blow up near 0 or 1
-        loss <- loss + bound_w * (1/(hu_scaled + eps) + 1/(1 - hu_scaled + eps) +
-                                    1/(uh_scaled + eps) + 1/(1 - uh_scaled + eps))
-      }
-      
-      loss
-    }
-    
-    # starting log params
-    log_start <- c(log(hu0[i]), log(uh0[i]))
-    
-    # deterministic local minimize
-    res <- stats::optim(
-      par = log_start,
-      fn  = obj,
-      method = "Nelder-Mead",
-      control = list(maxit = maxit, reltol = reltol)
-    )
-    
-    hu[i] <- clamp_hu(exp(res$par[1]), i)
-    uh[i] <- clamp_uh(exp(res$par[2]), i)
-    
-    # seed next age with this solution
-    hu0[i + 1] <- hu[i]
-    uh0[i + 1] <- uh[i]
-    
-    if (verbose && i %% 10 == 0) {
-      message("age ", age0[i], ": hu=", signif(hu[i],3), " uh=", signif(uh[i],3),
-              " loss=", signif(res$value,3))
-    }
-  }
-  
-  # last age: carry forward (doesn't affect last observed lx/prev)
-  hu[n] <- hu[n - 1]
-  uh[n] <- uh[n - 1]
-  
-  # IMPORTANT: avoid tibble scoping bug by using age0, not age
-  out <- tibble::tibble(
-    age    = rep(age0, each = 4),
-    trans  = rep(c("hu","hd","uh","ud"), times = length(age0)),
-    hazard = as.numeric(c(rbind(hu, hd, uh, ud)))
+  # Deterministic no-returns gives hd, ud, and HU lower bound (hu_nr)
+  hz_nr <- derive_noreturns_hazards(
+    age = age,
+    lx = lx,
+    prev = prev,
+    Rx = Rx,
+    age_int = age_int,
+    verbose = FALSE
   )
   
+  hd <- hz_nr[hz_nr$trans == "hd", "hazard", drop = TRUE]
+  ud <- hz_nr[hz_nr$trans == "ud", "hazard", drop = TRUE]
+  hu_nr <- hz_nr[hz_nr$trans == "hu", "hazard", drop = TRUE]
+  
+  # bounds
+  if(is.null(hu_bounds)) hu_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
+  if(is.null(uh_bounds)) uh_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
+  
+  hu_lo <- pmax(hu_bounds[,1], hu_nr)
+  hu_hi <- hu_bounds[,2]
+  uh_lo <- pmax(0, uh_bounds[,1])
+  uh_hi <- uh_bounds[,2]
+  
+  states <- build_states_targets(age, lx, prev)
+  
+  hu_out <- numeric(n)
+  uh_out <- numeric(n)
+  p2_loss <- rep(NA_real_, n)
+  degenerate <- rep(FALSE, n)
+  
+  for(i in seq_len(n)){
+    
+    cap <- turnover_K * (hu_0[i] + uh_0[i])
+    
+    # P1: exact no-returns point on the isocline
+    p1 <- c(clamp(hu_nr[i], hu_lo[i], hu_hi[i]), 0)
+    p1[2] <- clamp(p1[2], uh_lo[i], uh_hi[i])
+    
+    # P0: stage-1 point to project
+    p0 <- c(clamp(hu_0[i], hu_lo[i], hu_hi[i]), clamp(uh_0[i], uh_lo[i], uh_hi[i]))
+    
+    # Build P2 to define isocline direction (best-effort)
+    hu2_try <- clamp(p1[1] * exp(eps_log), hu_lo[i], hu_hi[i])
+    uh_hi_eff <- min(uh_hi[i], cap - hu2_try)
+    if(!is.finite(uh_hi_eff)) uh_hi_eff <- uh_hi[i]
+    uh_hi_eff <- max(uh_hi_eff, uh_lo[i])
+    
+    sol2 <- solve_uh_given_hu(
+      i, states, hd, ud,
+      hu = hu2_try,
+      uh_lo = uh_lo[i], uh_hi = uh_hi_eff,
+      age_int = age_int, tiny = tiny
+    )
+    
+    have_p2 <- is.finite(sol2$loss) && is.finite(sol2$uh) &&
+      (abs(hu2_try - p1[1]) > 0) && (sol2$loss <= line_tol)
+    
+    if(!have_p2){
+      uh_seed <- clamp(max(uh_lo[i], tiny) * exp(eps_log), uh_lo[i], uh_hi[i])
+      hu_hi_eff <- min(hu_hi[i], cap - uh_seed)
+      if(!is.finite(hu_hi_eff)) hu_hi_eff <- hu_hi[i]
+      hu_hi_eff <- max(hu_hi_eff, hu_lo[i])
+      
+      sol2b <- solve_hu_given_uh(
+        i, states, hd, ud,
+        uh = uh_seed,
+        hu_lo = hu_lo[i], hu_hi = hu_hi_eff,
+        age_int = age_int
+      )
+      
+      have_p2 <- is.finite(sol2b$loss) && is.finite(sol2b$hu) &&
+        (abs(uh_seed - p1[2]) > 0) && (sol2b$loss <= line_tol)
+      
+      if(have_p2){
+        p2 <- c(sol2b$hu, uh_seed)
+        p2_loss[i] <- sol2b$loss
+      } else {
+        # accept best-effort direction if it differs from p1 (avoid degeneracy)
+        if(is.finite(sol2$loss) && is.finite(sol2$uh) && abs(hu2_try - p1[1]) > 0){
+          p2 <- c(hu2_try, sol2$uh)
+          p2_loss[i] <- sol2$loss
+          have_p2 <- TRUE
+        } else if(is.finite(sol2b$loss) && is.finite(sol2b$hu) && abs(uh_seed - p1[2]) > 0){
+          p2 <- c(sol2b$hu, uh_seed)
+          p2_loss[i] <- sol2b$loss
+          have_p2 <- TRUE
+        } else {
+          p2 <- p1
+          have_p2 <- FALSE
+        }
+      }
+    } else {
+      p2 <- c(hu2_try, sol2$uh)
+      p2_loss[i] <- sol2$loss
+    }
+    
+    v <- p2 - p1
+    if(sum(v*v) < 1e-30){
+      degenerate[i] <- TRUE
+      hu_hat <- p1[1]
+      uh_hat <- p1[2]
+    } else {
+      
+      # feasible t interval on the segment (bounds + turnover cap)
+      feas <- clamp_t_feasible(
+        a = p1, v = v,
+        hu_lo = hu_lo[i], hu_hi = hu_hi[i],
+        uh_lo = uh_lo[i], uh_hi = uh_hi[i],
+        cap = cap
+      )
+      
+      if(!isTRUE(feas$ok)){
+        hu_hat <- p1[1]
+        uh_hat <- p1[2]
+      } else {
+        # orthogonal projection parameter t
+        pr <- project_point_to_line(p0, p1, v)
+        t_proj <- clamp(pr$t, feas$t_lo, feas$t_hi)
+        
+        if(isTRUE(final_refine)){
+          # refine along the line segment to remove expm/optimize numerical noise
+          f_t <- function(t){
+            pt <- p1 + t * v
+            ls <- loss_one_age(i, states, hd, ud, hu = pt[1], uh = pt[2], age_int = age_int)
+            ls + refine_dist_w * (t - t_proj)^2
+          }
+          opt <- optimize(f_t, interval = c(feas$t_lo, feas$t_hi), tol = refine_tol)
+          t_star <- opt$minimum
+        } else {
+          t_star <- t_proj
+        }
+        
+        p_star <- p1 + t_star * v
+        hu_hat <- p_star[1]
+        uh_hat <- p_star[2]
+      }
+    }
+    
+    hu_out[i] <- hu_hat
+    uh_out[i] <- uh_hat
+    
+    if(verbose && (i %% 10 == 0 || i == 1 || i == n)){
+      ls <- loss_one_age(i, states, hd, ud, hu = hu_out[i], uh = uh_out[i], age_int = age_int)
+      message(sprintf("age %s: loss=%.3e  p2_loss=%s  deg=%s",
+                      age[i], ls, format(p2_loss[i], scientific=TRUE, digits=2), degenerate[i]))
+    }
+  }
+  
+  # Optional: last-age extrapolation for returns hazards too (doesn't affect matching)
+  if(isTRUE(extrap_last_age) && n >= 3){
+    min_haz <- bounds[1]
+    extrap_last <- function(x) {
+      if (is.finite(x[n-1]) && is.finite(x[n-2]) && x[n-1] > 0 && x[n-2] > 0) {
+        exp(2*log(x[n-1]) - log(x[n-2]))
+      } else if (is.finite(x[n-1])) {
+        x[n-1]
+      } else {
+        min_haz
+      }
+    }
+    
+    # Extrapolate and then enforce bounds + turnover cap
+    hu_out[n] <- clamp(pmax(extrap_last(hu_out), min_haz), hu_lo[n], hu_hi[n])
+    uh_out[n] <- clamp(pmax(extrap_last(uh_out), min_haz), uh_lo[n], uh_hi[n])
+    
+    cap_n <- turnover_K * (hu_0[n] + uh_0[n])
+    if(is.finite(cap_n) && (hu_out[n] + uh_out[n] > cap_n)){
+      # keep hu fixed, trim uh
+      uh_out[n] <- max(uh_lo[n], cap_n - hu_out[n])
+    }
+  }
+  
+  out <- tibble::tibble(
+    age = rep(age, times = 4),
+    trans = rep(c("hd","hu","ud","uh"), each = n),
+    hazard = c(hd, hu_out, ud, uh_out)
+  )
+  
+  attr(out, "diagnostics") <- list(p2_loss = p2_loss, degenerate = degenerate)
   out
 }
 
@@ -1414,23 +1385,28 @@ derive_returns_hazards_from_Rx <- function(
     bounds = c(1e-12, 2),
     hu_bounds = NULL,
     uh_bounds = NULL,
-    maxit = 500,           # accepted, unused
-    reltol = 1e-14,        # accepted, unused
+    maxit = 500,           # accepted for back-compat; unused
+    reltol = 1e-14,        # accepted for back-compat; unused
     hu_0,
     uh_0,
-    smooth_w = 0.5,        # accepted, unused
-    curvature_w = 0.5,     # accepted, unused
-    bound_w  = 1e-3,       # accepted, unused
+    smooth_w = 0.5,        # accepted; unused
+    curvature_w = 0.5,     # accepted; unused
+    bound_w  = 1e-3,       # accepted; unused
     turnover_K = 1.2,
-    turnover_w = 1e4,      # accepted, unused
-    fit_w = 1e6,           # accepted, unused
-    solver = c("project"), # accepted
-    snap_tol = 1e-20,      # diagnostic threshold for final loss
+    turnover_w = 1e4,      # accepted; unused
+    fit_w = 1e6,           # accepted; unused
+    solver = c("project"), # accepted; unused (always projection+refine)
+    snap_tol = 1e-20,      # diagnostic only
     verbose = FALSE,
-    # new controls
+    # snapper controls
     eps_log = 1e-2,
     tiny = 1e-14,
-    line_tol = 1e-12       # tolerance for constructing P2 (direction)
+    line_tol = 1e-12,
+    # NEW: numerical tighten + last-age behaviour
+    final_refine = TRUE,
+    refine_tol = 1e-16,
+    refine_dist_w = 1e-6,
+    extrap_last_age = TRUE
 ){
   
   solver <- match.arg(solver)
@@ -1439,6 +1415,7 @@ derive_returns_hazards_from_Rx <- function(
   stopifnot(length(lx) == n, length(prev) == n, length(Rx) == n,
             length(hu_0) == n, length(uh_0) == n)
   
+  # Deterministic no-returns gives hd, ud, and HU lower bound (hu_nr)
   hz_nr <- derive_noreturns_hazards(
     age = age,
     lx = lx,
@@ -1452,6 +1429,7 @@ derive_returns_hazards_from_Rx <- function(
   ud <- hz_nr[hz_nr$trans == "ud", "hazard", drop = TRUE]
   hu_nr <- hz_nr[hz_nr$trans == "hu", "hazard", drop = TRUE]
   
+  # bounds
   if(is.null(hu_bounds)) hu_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
   if(is.null(uh_bounds)) uh_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
   
@@ -1471,46 +1449,50 @@ derive_returns_hazards_from_Rx <- function(
     
     cap <- turnover_K * (hu_0[i] + uh_0[i])
     
-    # P1 exact
+    # P1: exact no-returns point on the isocline
     p1 <- c(clamp(hu_nr[i], hu_lo[i], hu_hi[i]), 0)
     p1[2] <- clamp(p1[2], uh_lo[i], uh_hi[i])
     
-    # Candidate point to project (stage-1)
+    # P0: stage-1 point to project
     p0 <- c(clamp(hu_0[i], hu_lo[i], hu_hi[i]), clamp(uh_0[i], uh_lo[i], uh_hi[i]))
     
-    # Build P2 by nudging HU upward and solving for UH (best effort)
+    # Build P2 to define isocline direction (best-effort)
     hu2_try <- clamp(p1[1] * exp(eps_log), hu_lo[i], hu_hi[i])
     uh_hi_eff <- min(uh_hi[i], cap - hu2_try)
     if(!is.finite(uh_hi_eff)) uh_hi_eff <- uh_hi[i]
     uh_hi_eff <- max(uh_hi_eff, uh_lo[i])
     
-    sol2 <- solve_uh_given_hu(i, states, hd, ud, hu=hu2_try,
-                              uh_lo = uh_lo[i], uh_hi = uh_hi_eff,
-                              age_int = age_int, tiny = tiny)
+    sol2 <- solve_uh_given_hu(
+      i, states, hd, ud,
+      hu = hu2_try,
+      uh_lo = uh_lo[i], uh_hi = uh_hi_eff,
+      age_int = age_int, tiny = tiny
+    )
     
-    have_p2 <- is.finite(sol2$loss) && is.finite(sol2$uh) && (abs(hu2_try - p1[1]) > 0) &&
-      (sol2$loss <= line_tol)
+    have_p2 <- is.finite(sol2$loss) && is.finite(sol2$uh) &&
+      (abs(hu2_try - p1[1]) > 0) && (sol2$loss <= line_tol)
     
     if(!have_p2){
-      # fallback: nudge UH and solve HU (best effort)
       uh_seed <- clamp(max(uh_lo[i], tiny) * exp(eps_log), uh_lo[i], uh_hi[i])
       hu_hi_eff <- min(hu_hi[i], cap - uh_seed)
       if(!is.finite(hu_hi_eff)) hu_hi_eff <- hu_hi[i]
       hu_hi_eff <- max(hu_hi_eff, hu_lo[i])
       
-      sol2b <- solve_hu_given_uh(i, states, hd, ud, uh=uh_seed,
-                                 hu_lo = hu_lo[i], hu_hi = hu_hi_eff,
-                                 age_int = age_int)
+      sol2b <- solve_hu_given_uh(
+        i, states, hd, ud,
+        uh = uh_seed,
+        hu_lo = hu_lo[i], hu_hi = hu_hi_eff,
+        age_int = age_int
+      )
       
-      have_p2 <- is.finite(sol2b$loss) && is.finite(sol2b$hu) && (abs(uh_seed - p1[2]) > 0) &&
-        (sol2b$loss <= line_tol)
+      have_p2 <- is.finite(sol2b$loss) && is.finite(sol2b$hu) &&
+        (abs(uh_seed - p1[2]) > 0) && (sol2b$loss <= line_tol)
       
       if(have_p2){
         p2 <- c(sol2b$hu, uh_seed)
         p2_loss[i] <- sol2b$loss
       } else {
-        # Accept best-effort direction if it differs from p1, even if not within line_tol
-        # This prevents degeneracy when numeric tolerance is the only issue.
+        # accept best-effort direction if it differs from p1 (avoid degeneracy)
         if(is.finite(sol2$loss) && is.finite(sol2$uh) && abs(hu2_try - p1[1]) > 0){
           p2 <- c(hu2_try, sol2$uh)
           p2_loss[i] <- sol2$loss
@@ -1521,7 +1503,6 @@ derive_returns_hazards_from_Rx <- function(
           have_p2 <- TRUE
         } else {
           p2 <- p1
-          p2_loss[i] <- NA_real_
           have_p2 <- FALSE
         }
       }
@@ -1536,10 +1517,8 @@ derive_returns_hazards_from_Rx <- function(
       hu_hat <- p1[1]
       uh_hat <- p1[2]
     } else {
-      # Project onto infinite line
-      pr <- project_point_to_line(p0, p1, v)
       
-      # Clamp to feasible segment (bounds + cap)
+      # feasible t interval on the segment (bounds + turnover cap)
       feas <- clamp_t_feasible(
         a = p1, v = v,
         hu_lo = hu_lo[i], hu_hi = hu_hi[i],
@@ -1548,11 +1527,29 @@ derive_returns_hazards_from_Rx <- function(
       )
       
       if(!isTRUE(feas$ok)){
-        hu_hat <- p1[1]; uh_hat <- p1[2]
+        hu_hat <- p1[1]
+        uh_hat <- p1[2]
       } else {
-        t_star <- clamp(pr$t, feas$t_lo, feas$t_hi)
+        # orthogonal projection parameter t
+        pr <- project_point_to_line(p0, p1, v)
+        t_proj <- clamp(pr$t, feas$t_lo, feas$t_hi)
+        
+        if(isTRUE(final_refine)){
+          # refine along the line segment to remove expm/optimize numerical noise
+          f_t <- function(t){
+            pt <- p1 + t * v
+            ls <- loss_one_age(i, states, hd, ud, hu = pt[1], uh = pt[2], age_int = age_int)
+            ls + refine_dist_w * (t - t_proj)^2
+          }
+          opt <- optimize(f_t, interval = c(feas$t_lo, feas$t_hi), tol = refine_tol)
+          t_star <- opt$minimum
+        } else {
+          t_star <- t_proj
+        }
+        
         p_star <- p1 + t_star * v
-        hu_hat <- p_star[1]; uh_hat <- p_star[2]
+        hu_hat <- p_star[1]
+        uh_hat <- p_star[2]
       }
     }
     
@@ -1560,28 +1557,42 @@ derive_returns_hazards_from_Rx <- function(
     uh_out[i] <- uh_hat
     
     if(verbose && (i %% 10 == 0 || i == 1 || i == n)){
-      ls <- loss_one_age(i, states, hd, ud, hu=hu_out[i], uh=uh_out[i], age_int=age_int)
-      message(sprintf("age %s: hu0=%.6g uh0=%.6g  -> hu=%.6g uh=%.6g  loss=%.3e  p2_loss=%s  deg=%s",
-                      age[i], hu_0[i], uh_0[i], hu_out[i], uh_out[i], ls,
-                      format(p2_loss[i], scientific=TRUE, digits=2),
-                      degenerate[i]))
+      ls <- loss_one_age(i, states, hd, ud, hu = hu_out[i], uh = uh_out[i], age_int = age_int)
+      message(sprintf("age %s: loss=%.3e  p2_loss=%s  deg=%s",
+                      age[i], ls, format(p2_loss[i], scientific=TRUE, digits=2), degenerate[i]))
     }
   }
   
-  out <- data.frame(
-    age = rep(age, times = 4),
-    trans = rep(c("hd","hu","ud","uh"), each = n),
-    hazard = c(hd, hu_out, ud, uh_out),
-    stringsAsFactors = FALSE
-  )
-  if(requireNamespace("tibble", quietly = TRUE)){
-    out <- tibble::as_tibble(out)
+  # Optional: last-age extrapolation for returns hazards too (doesn't affect matching)
+  if(isTRUE(extrap_last_age) && n >= 3){
+    min_haz <- bounds[1]
+    extrap_last <- function(x) {
+      if (is.finite(x[n-1]) && is.finite(x[n-2]) && x[n-1] > 0 && x[n-2] > 0) {
+        exp(2*log(x[n-1]) - log(x[n-2]))
+      } else if (is.finite(x[n-1])) {
+        x[n-1]
+      } else {
+        min_haz
+      }
+    }
+    
+    # Extrapolate and then enforce bounds + turnover cap
+    hu_out[n] <- clamp(pmax(extrap_last(hu_out), min_haz), hu_lo[n], hu_hi[n])
+    uh_out[n] <- clamp(pmax(extrap_last(uh_out), min_haz), uh_lo[n], uh_hi[n])
+    
+    cap_n <- turnover_K * (hu_0[n] + uh_0[n])
+    if(is.finite(cap_n) && (hu_out[n] + uh_out[n] > cap_n)){
+      # keep hu fixed, trim uh
+      uh_out[n] <- max(uh_lo[n], cap_n - hu_out[n])
+    }
   }
   
-  attr(out, "diagnostics") <- list(
-    p2_loss = p2_loss,
-    degenerate = degenerate
+  out <- tibble::tibble(
+    age = rep(age, times = 4),
+    trans = rep(c("hd","hu","ud","uh"), each = n),
+    hazard = c(hd, hu_out, ud, uh_out)
   )
   
+  attr(out, "diagnostics") <- list(p2_loss = p2_loss, degenerate = degenerate)
   out
 }

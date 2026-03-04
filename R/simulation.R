@@ -20,13 +20,13 @@ suppressPackageStartupMessages({
   library(ggplot2)
 })
 
-source("R/simulation_functions5.R")
+source("R/simulation_functions.R")
 
 # -----------------------------------------------------------------------------
 # USER SETTINGS (keep these minimal)
 # -----------------------------------------------------------------------------
-age     <- 50:100
-age_int <- 1
+age_int <- 1/12
+age     <- seq(50,100,by=age_int)
 init    <- c(H = 1, U = 0)
 
 # Hazard family for ground + candidates + polishing
@@ -204,6 +204,7 @@ haz_returns_exact <- Rx_plot_df %>%
       snap_tol = snap_tol,
       line_tol = line_tol,
       eps_log = eps_log,
+      refine_tol = 1e-20,
       verbose = FALSE
     ) %>% mutate(system = "returns")
   }) %>%
@@ -238,7 +239,7 @@ lt_all <- haz_all %>%
   group_by(.data$world, .data$system) %>%
   group_modify(~{
     P <- haz_to_probs(.x %>% select(age, trans, hazard), age = age, age_int = age_int)
-    calculate_lt(P, init = init)
+    calculate_lt(P, init = init, age_int = age_int)
   }) %>%
   ungroup()
 
@@ -254,9 +255,14 @@ haz_all |>
   scale_y_log10()+
   facet_grid(vars(trans),vars(system),scale="free_y")
   
-
 lt_all |> 
   group_by(system,world) |> 
   summarize(hle = sum(Lx * (1-prevalence))) |> 
   pivot_wider(names_from = system, values_from = hle) |> 
-  pull(noreturns)
+  pull(returns)
+
+readr::write_csv(haz_all, file = "data/worlds_hazards_monthly.csv.gz")
+readr::write_csv(lt_all, file = "data/worlds_mslt_monthly.csv.gz")
+
+
+
