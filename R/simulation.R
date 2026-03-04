@@ -258,4 +258,5 @@ haz_all |>
 lt_all |> 
   group_by(system,world) |> 
   summarize(hle = sum(Lx * (1-prevalence))) |> 
-  View()
+  pivot_wider(names_from = system, values_from = hle) |> 
+  pull(noreturns)
