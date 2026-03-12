@@ -1,7 +1,23 @@
 
 
 library(tidyverse)
-dec <- read_csv("data/worlds_decomp_annual.csv.gz")
+
+age_int <- 1/12
+system <- "returns"
+
+fig1_name <- paste0("figs/dec_",system,"_margins_",ifelse(age_int==1,"annual.pdf","monthly.pdf"))
+fig2_name <- paste0("figs/dec_",system,"_age_",ifelse(age_int==1,"annual.pdf","monthly.pdf"))
+
+if (age_int == 1){
+  dec <- read_csv("data/worlds_decomp_annual.csv.gz")
+}
+if (age_int == 1/12){
+  dec <- read_csv("data/worlds_decomp_monthly.csv.gz")
+  dec <- dec |> 
+    mutate(age = age - age %% 1) |> 
+    group_by(system, world1, world2, trans, age) |> 
+    summarize(cc = sum(cc), .groups = "drop")
+}
 
 dec |> 
   filter(system == "returns") |> 
@@ -16,14 +32,6 @@ dec |>
   facet_grid(vars(world1),vars(world2))
 
 
-
-dec |> 
-  filter(system == "returns") |> 
-  group_by(world1,world2,trans) |> 
-  ggplot(aes(x = trans, y = cc, fill = trans)) +
-  geom_col() +
-  facet_grid(vars(world1),vars(world2))+
-  theme_minimal()
 
 dec_fig_margins <-
   dec |>
@@ -142,7 +150,12 @@ dec_fig_margins |>
     strip.text.x.bottom = element_text(angle = 0)
   ) +
   labs(x = "world 2", y = "world 1", fill = "hazard:")
-ggsave(p,file="figs/dec_returns_margins.pdf",width=30,height=30,units="cm")
+
+
+ggsave(p,file=fig1_name,width=30,height=30,units="cm")
+
+
+
 # --------------------------------------
 # age profile panel:
 dec_all <-
@@ -292,5 +305,6 @@ dec_all |>
     strip.text.x.bottom = element_text(angle = 0)
   ) +
   labs(x = "world 2", y = "world 1", color = "hazard:")
-p
-ggsave(p,file="figs/dec_returns_age.pdf",width=30,height=30,units="cm")
+
+
+ggsave(p,file=fig2_name,width=30,height=30,units="cm")
