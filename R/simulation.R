@@ -25,7 +25,7 @@ source("R/simulation_functions.R")
 # -----------------------------------------------------------------------------
 # USER SETTINGS (keep these minimal)
 # -----------------------------------------------------------------------------
-age_int <- 1/12
+age_int <- 1
 age     <- seq(50,100,by=age_int)
 init    <- c(H = 1, U = 0)
 
@@ -205,14 +205,113 @@ haz_returns_exact <- Rx_plot_df %>%
       line_tol = line_tol,
       eps_log = eps_log,
       refine_tol = 1e-20,
-      verbose = FALSE
+      verbose = TRUE,
+      # v2 controls
+      final_refine = FALSE
+  
     ) %>% mutate(system = "returns")
+  }) %>%
+  ungroup()
+haz_returns_exact <- Rx_plot_df %>%
+  group_by(.data$world) %>%
+  group_modify(~{
+    w <- unique(.y$world)
+    Rx_vec <- .x %>% arrange(age) %>% pull(Rx)
+    
+    hz0 <- haz_ret_pass1 %>%
+      filter(.data$world == w, .data$trans %in% c("hu","uh")) %>%
+      arrange(.data$trans, .data$age)
+    
+    hu0 <- hz0 %>% filter(.data$trans == "hu") %>% pull(.data$hazard)
+    uh0 <- hz0 %>% filter(.data$trans == "uh") %>% pull(.data$hazard)
+    
+    derive_returns_hazards_from_Rx_curve(
+      age  = ground_summary$age,
+      lx   = ground_summary$lx,
+      prev = ground_summary$prevalence,
+      Rx   = Rx_vec,
+      age_int = age_int,
+      bounds = bounds_scalar,
+      hu_bounds = NULL,
+      uh_bounds = NULL,
+      hu_0 = hu0,
+      uh_0 = uh0,
+      turnover_K = turnover_K,
+      snap_tol = snap_tol,
+      line_tol = line_tol,
+      eps_log = eps_log,
+      refine_tol = 1e-20,
+      verbose = TRUE
+    ) %>%
+      mutate(system = "returns")
+  }) %>%
+  ungroup()
+haz_returns_exact <- Rx_plot_df %>%
+  group_by(.data$world) %>%
+  group_modify(~{
+    w <- unique(.y$world)
+    Rx_vec <- .x %>%
+      arrange(age) %>%
+      pull(Rx) %>%
+      as.numeric() %>%
+      unname()
+    
+    hz0 <- haz_ret_pass1 %>%
+      filter(.data$world == w, .data$trans %in% c("hu", "uh")) %>%
+      arrange(.data$trans, .data$age)
+    
+    hu0 <- hz0 %>%
+      filter(.data$trans == "hu") %>%
+      pull(.data$hazard) %>%
+      as.numeric() %>%
+      unname()
+    
+    uh0 <- hz0 %>%
+      filter(.data$trans == "uh") %>%
+      pull(.data$hazard) %>%
+      as.numeric() %>%
+      unname()
+    
+    hu0_local <- hu0
+    uh0_local <- uh0
+    
+    derive_returns_hazards_from_Rx(
+      age  = ground_summary$age,
+      lx   = ground_summary$lx,
+      prev = ground_summary$prevalence,
+      Rx   = Rx_vec,
+      age_int = age_int,
+      bounds = bounds_scalar,
+      hu_bounds = NULL,
+      uh_bounds = NULL,
+      hu_0 = hu0,
+      uh_0 = uh0,
+      turnover_K = turnover_K,
+      snap_tol = 1e-12,
+      line_tol = 1e-12,
+      eps_log = eps_log,
+      refine_tol = 1e-24,
+      verbose = TRUE,
+      final_refine = TRUE,
+      sr_refine = TRUE,
+      sr_skip_last_age = TRUE,
+      sr_improve_tol = 0,
+      sr_s_window = log(1.1),
+      sr_r_window = log(1.1),
+      sr_anchor_w = 0,
+      sr_maxit = 5000,
+      sr_factr = 1,
+      sr_pgtol = 0,
+      sr_obj_scale = 1e12
+    ) %>%
+      mutate(system = "returns")
   }) %>%
   ungroup()
 
 # ------------------------------
 # 7) No-returns hazards
 # ------------------------------
+source("R/prev_test_functions.R")
 haz_noreturns <- Rx_plot_df %>%
   group_by(.data$world) %>%
   group_modify(~{
@@ -245,8 +344,21 @@ lt_all <- haz_all %>%
 
 
 lt_all |> 
-  ggplot(aes(x=age,y=prevalence,color=interaction(world,system))) +
+  filter(system == 'noreturns') |> 
+  left_join(ground_summary |> rename(lx_ground = lx, prevalence_ground = prevalence), by = join_by(age)) |> 
+  mutate(prev_resid = prevalence - prevalence_ground,
+         lx_resid = lx - lx_ground) |> 
+  ggplot(aes(x=age,y=prev_resid,color=interaction(world))) +
   geom_line()
+
+haz_all |> 
+  filter(system == "returns") |> 
+  pivot_wider(names_from = trans, values_from = hazard) |> 
+  mutate(lratio = log(hu/uh),
+         lturn = log(hu+uh)) |> 
+  ggplot(aes(x=age,y=lratio,color=as.factor(world),groups=world)) +
+  geom_line()
+
 
 haz_all |> 
   filter(!(trans=="uh" & system== "noreturns")) |> 
@@ -255,14 +367,31 @@ haz_all |>
   scale_y_log10()+
   facet_grid(vars(trans),vars(system),scale="free_y")
   
+ret <-
 lt_all |> 
   group_by(system,world) |> 
-  summarize(hle = sum(Lx * (1-prevalence))) |> 
+  summarize(hle = sum(Lx * (1-prevalence)),.groups="drop") |> 
   pivot_wider(names_from = system, values_from = hle) |> 
-  pull(returns)
+  pull(noreturns) 
 
-readr::write_csv(haz_all, file = "data/worlds_hazards_monthly.csv.gz")
-readr::write_csv(lt_all, file = "data/worlds_mslt_monthly.csv.gz")
+print(ret,digits=8)
+sd(ret)
+data.frame(
+  age = ground_summary$age,
+  method = diag$method,
+  final_loss = diag$final_loss,
+  hu_proj = diag$hu_proj,
+  bracket_lo = diag$bracket_lo,
+  bracket_hi = diag$bracket_hi
+)
 
+if (age_in == 1){
+  readr::write_csv(haz_all, file = "data/worlds_hazards_annual.csv.gz")
+  readr::write_csv(lt_all, file = "data/worlds_mslt_annual.csv.gz")
+}
+if (age_int == 1/12){
+  readr::write_csv(haz_all, file = "data/worlds_hazards_monthly.csv.gz")
+  readr::write_csv(lt_all, file = "data/worlds_mslt_monthly.csv.gz")
+}
 
 
