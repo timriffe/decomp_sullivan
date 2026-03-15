@@ -72,10 +72,10 @@ ground_mslt <- run_mslt(
   haz_shape = haz_shape, pivot_age = pivot_age, shape_width = shape_width
 )
 
-ground_summary <- ground_mslt |> select(age, lx, prevalence)
+ground_summary <- ground_mslt |> select(age, lx, prevalence, prevalence_point)
 
 # Quick plot of targets
-ground_summary |>
+ground_summary |> select(-prevalence_point) |> 
   pivot_longer(c(lx, prevalence), names_to = "measure", values_to = "value") |>
   ggplot(aes(age, value, color = measure)) +
   geom_line() +
@@ -207,8 +207,8 @@ haz_returns_exact <- Rx_plot_df %>%
       refine_tol = 1e-20,
       verbose = TRUE,
       # v2 controls
-      final_refine = FALSE
-  
+      final_refine = FALSE,
+      prevalence_point = ground_summary$prevalence_point
     ) %>% mutate(system = "returns")
   }) %>%
   ungroup()
@@ -311,7 +311,7 @@ haz_returns_exact <- Rx_plot_df %>%
 # ------------------------------
 # 7) No-returns hazards
 # ------------------------------
-source("R/prev_test_functions.R")
+
 haz_noreturns <- Rx_plot_df %>%
   group_by(.data$world) %>%
   group_modify(~{
@@ -321,13 +321,32 @@ haz_noreturns <- Rx_plot_df %>%
     derive_noreturns_hazards(
       age  = ground_summary$age,
       lx   = ground_summary$lx,
-      prev = ground_summary$prevalence,
+      prev = ground_summary$prevalence,   # interval prevalence
       Rx   = Rx_vec,
       age_int = age_int,
       verbose = FALSE
-    ) %>% mutate(system = "noreturns")
+    ) %>%
+      mutate(system = "noreturns")
   }) %>%
   ungroup()
+
+
+# haz_noreturns <- Rx_plot_df %>%
+#   group_by(.data$world) %>%
+#   group_modify(~{
+#     w <- unique(.y$world)
+#     Rx_vec <- .x %>% arrange(age) %>% pull(Rx)
+#     
+#     derive_noreturns_hazards(
+#       age  = ground_summary$age,
+#       lx   = ground_summary$lx,
+#       prev = ground_summary$prevalence,
+#       Rx   = Rx_vec,
+#       age_int = age_int,
+#       verbose = FALSE
+#     ) %>% mutate(system = "noreturns")
+#   }) %>%
+#   ungroup()
 
 haz_all <- bind_rows(haz_returns_exact, haz_noreturns)
 
@@ -344,7 +363,7 @@ lt_all <- haz_all %>%
 
 
 lt_all |> 
-  filter(system == 'noreturns') |> 
+  filter(system == 'returns') |> 
   left_join(ground_summary |> rename(lx_ground = lx, prevalence_ground = prevalence), by = join_by(age)) |> 
   mutate(prev_resid = prevalence - prevalence_ground,
          lx_resid = lx - lx_ground) |> 
