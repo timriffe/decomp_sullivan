@@ -350,7 +350,7 @@ haz_all <- bind_rows(haz_returns_exact, haz_noreturns)
 # -----------------------------------
 # 8) Lifetables from hazards 
 # -----------------------------------
-lt_all <- haz_all %>%
+lt_all <- haz_ret_pass1 %>%
   group_by(.data$world, .data$system) %>%
   group_modify(~{
     P <- haz_to_probs(.x %>% select(age, trans, hazard), age = age, age_int = age_int)
@@ -360,7 +360,6 @@ lt_all <- haz_all %>%
 
 
 lt_all |> 
-  filter(system == 'returns') |> 
   left_join(ground_summary |> rename(lx_ground = lx, prevalence_ground = prevalence_point), by = join_by(age)) |> 
   mutate(prev_resid = prevalence_point - prevalence_ground,
          lx_resid = lx - lx_ground) |> 
