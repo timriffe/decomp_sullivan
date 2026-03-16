@@ -1038,6 +1038,7 @@ derive_noreturns_hazards <- function(age,
     prev
   }
   
+  # Look here!
   lu_tgt <- prev_used * lx
   lh_tgt <- lx - lu_tgt
   
