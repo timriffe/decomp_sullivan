@@ -1,19 +1,15 @@
-# simulation_functions.R
-# Clean, harmonized function set for decomp_sullivan multistate simulation workflow.
-# - Canonical make_Q() used by haz_to_probs() is preserved.
-# - Candidate world generation via SVD near-null directions.
-# - Single-pass polishing via polish_many() (no second-stage refinement).
-# - Exact "returns" hazards obtained by snapping (hu0,uh0) to per-age isoclines.
-# - Deterministic no-returns hazards via derive_noreturns_hazards().
-#
-# Dependencies: dplyr, tidyr, purrr, tibble, expm
 
+# --------------
 suppressPackageStartupMessages({
   library(dplyr)
   library(tidyr)
+  library(ggplot2)
   library(purrr)
   library(tibble)
   library(expm)
+  library(furrr)
+  library(future)
+  library(parallel)
 })
 validate_par_vec <- function(par_vec, piecewise = NULL) {
   if (!is.numeric(par_vec)) stop("par_vec must be numeric.", call. = FALSE)
@@ -870,39 +866,12 @@ calculate_lt <- function(P, init = c(H = 1, U = 0), age_int = 1,
       prevalence = .data$prevalence_interval
     )
 }
-# calculate_lt <- function(P, init = c(H = 1, U = 0), age_int = 1) {
-#   P |>
-#     tidyr::pivot_longer(-c(age, from), names_to = "to", values_to = "p") |>
-#     dplyr::filter(.data$from != "D") |>
-#     tidyr::unite("state", c("from","to"), sep = "") |>
-#     tidyr::pivot_wider(names_from = state, values_from = p) |>
-#     dplyr::group_modify(~{
-#       .x$lh <- numeric(nrow(.x))
-#       .x$lu <- numeric(nrow(.x))
-#       
-#       init_use <- init
-#       .x$lh[1] <- init_use["H"]
-#       .x$lu[1] <- init_use["U"]
-#       
-#       for (ii in seq_len(nrow(.x) - 1)) {
-#         .x$lh[ii + 1] <- .x$lh[ii] * .x$HH[ii] + .x$lu[ii] * .x$UH[ii]
-#         .x$lu[ii + 1] <- .x$lu[ii] * .x$UU[ii] + .x$lh[ii] * .x$HU[ii]
-#       }
-#       .x
-#     }) |>
-#     dplyr::mutate(
-#       prevalence = .data$lu / (.data$lh + .data$lu),
-#       lx         = .data$lh + .data$lu,
-#       Lx         = age_int * (.data$lx + dplyr::lead(.data$lx, default = 0)) / 2
-#     )
-# }
-# Experimental override for derive_noreturns_hazards()
-# Uses interval-average unhealthy share (trapezoid proxy) instead of point prevalence
-# for constructing the target unhealthy stock vector inside the no-returns solver.
-#
-# Source AFTER simulation_functions.R
 
-interval_prev_trapezoid <- function(lx, prev, last = c("point", "carry")) {
+
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+clamp <- function(x, lo, hi) pmin(hi, pmax(lo, x))
+
+interval_prev_trapezoid <- function(lx, prev, last = c("carry", "point")) {
   last <- match.arg(last)
   lx <- as.numeric(lx)
   prev <- as.numeric(prev)
@@ -914,65 +883,108 @@ interval_prev_trapezoid <- function(lx, prev, last = c("point", "carry")) {
   if (n < 2) return(prev)
   
   lu <- lx * prev
-  
   out <- numeric(n)
-  out[1:(n - 1)] <- (lu[1:(n - 1)] + lu[2:n]) / (lx[1:(n - 1)] + lx[2:n])
-  
+  den <- lx[1:(n - 1)] + lx[2:n]
+  out[1:(n - 1)] <- ifelse(den > 0, (lu[1:(n - 1)] + lu[2:n]) / den, NA_real_)
   out[n] <- if (last == "point") prev[n] else out[n - 1]
   out
 }
 
-derive_noreturns_hazards <- function(age,
-                                     lx,
-                                     prev,
-                                     Rx,
-                                     age_int = 1,
-                                     min_haz = 1e-12,
-                                     # root finding controls
-                                     tol = 1e-20,
-                                     maxiter = 100,
-                                     # brackets (expanded automatically if needed)
-                                     hu_bracket = c(1e-12, 5),
-                                     hd_bracket = c(1e-12, 5),
-                                     verbose = TRUE,
-                                     prev_mode = c("interval", "point"),
-                                     interval_last = c("carry", "point")) {
+.coerce_state_prev <- function(prev,
+                               prevalence_point = NULL,
+                               lx = NULL,
+                               n = NULL) {
+  out <- if (!is.null(prevalence_point)) prevalence_point else prev
+  out <- as.numeric(out)
   
-  prev_mode <- match.arg(prev_mode)
-  interval_last <- match.arg(interval_last)
-  
+  if (!is.null(n) && length(out) != n) {
+    stop("state prevalence vector must have length n.", call. = FALSE)
+  }
+  if (!is.null(lx) && length(out) != length(lx)) {
+    stop("state prevalence vector must match length(lx).", call. = FALSE)
+  }
+  out
+}
+
+build_states_targets <- function(age, lx, prevalence_point) {
   age <- as.numeric(age)
+  lx  <- as.numeric(lx)
+  prev_pt <- as.numeric(prevalence_point)
   n <- length(age)
-  if (n < 2) stop("Need at least 2 ages.", call. = FALSE)
   
-  lx <- as.numeric(lx)
-  if (length(lx) != n) stop("lx must have same length as age.", call. = FALSE)
-  
-  prev <- as.numeric(prev)
-  if (length(prev) != n) stop("prev must have same length as age.", call. = FALSE)
-  
-  if (length(Rx) == 1) Rx <- rep(as.numeric(Rx), n)
-  Rx <- as.numeric(Rx)
-  if (length(Rx) != n) stop("Rx must be length 1 or length(age).", call. = FALSE)
-  
-  prev_used <- if (prev_mode == "interval") {
-    interval_prev_trapezoid(lx = lx, prev = prev, last = interval_last)
-  } else {
-    prev
+  if (length(lx) != n) {
+    stop("lx must have same length as age.", call. = FALSE)
+  }
+  if (length(prev_pt) != n) {
+    stop("prevalence_point must have same length as age.", call. = FALSE)
   }
   
-  # target state occupancies
-  lu_tgt <- prev_used * lx
-  lh_tgt <- lx - lu_tgt
+  prev_pt <- pmin(pmax(prev_pt, 0), 1)
   
-  # numeric safety
-  Rx <- pmax(Rx, min_haz)
-  lx <- pmax(lx, min_haz)
-  lu_tgt <- pmin(pmax(lu_tgt, 0), lx)
-  lh_tgt <- pmax(lh_tgt, 0)
+  # exact-age state stocks
+  lH <- lx * (1 - prev_pt)
+  lU <- lx * prev_pt
+  lD <- 1 - lx
   
-  make_P <- function(hu, hd, Rx_i, dt) {
-    ud <- Rx_i * hd
+  # targets for age x+1 implied by the supplied exact-age stocks
+  nextHU <- cbind(lH, lU)
+  if (n >= 2) {
+    nextHU[1:(n - 1), ] <- cbind(lH[2:n], lU[2:n])
+    nextHU[n, ] <- nextHU[n - 1, ]
+  }
+  
+  list(
+    age = age,
+    lx = lx,
+    prev = prev_pt,
+    lH = lH,
+    lU = lU,
+    lD = lD,
+    nextHU = nextHU
+  )
+}
+make_Q_returns <- function(hu, hd, uh, ud) {
+  matrix(c(
+    -(hu + hd),  hu,         hd,
+    uh,        -(uh + ud),   ud,
+    0,           0,          0
+  ), nrow = 3, byrow = TRUE)
+}
+
+derive_noreturns_hazards <- function(
+    age,
+    lx,
+    prev_pt,
+    Rx,
+    age_int = 1,
+    min_haz = 1e-12,
+    tol = 1e-14,
+    maxiter = 100,
+    hu_bracket = c(1e-12, 5),
+    hd_bracket = c(1e-12, 5),
+    verbose = TRUE
+) {
+  
+  age <- as.numeric(age)
+  lx  <- as.numeric(lx)
+  prev_pt <- as.numeric(prev_pt)
+  
+  n <- length(age)
+  if (n < 2) stop("Need at least 2 ages.", call. = FALSE)
+  if (length(lx) != n) stop("lx must match age.", call. = FALSE)
+  if (length(prev_pt) != n) stop("prev_pt must match age.", call. = FALSE)
+  
+  if (length(Rx) == 1) Rx <- rep(Rx, n)
+  if (length(Rx) != n) stop("Rx must be length 1 or n.", call. = FALSE)
+  
+  Rx <- pmax(as.numeric(Rx), min_haz)
+  
+  # --- targets ---
+  U <- lx * prev_pt
+  H <- lx - U
+  
+  # --- helpers ---
+  make_P <- function(hu, hd, ud, dt, min_haz) {
     uh <- min_haz
     Q <- matrix(c(
       -(hu + hd),  hu,  hd,
@@ -982,19 +994,22 @@ derive_noreturns_hazards <- function(age,
     expm::expm(Q * dt)
   }
   
-  step_forward <- function(H, U, P) {
-    v_next <- c(H, U, 0) %*% P
-    c(H = as.numeric(v_next[1]), U = as.numeric(v_next[2]))
+  step <- function(H0, U0, P) {
+    v <- c(H0, U0, 0) %*% P
+    c(H = as.numeric(v[1]), U = as.numeric(v[2]))
   }
   
-  hu <- rep(NA_real_, n)
-  hd <- rep(NA_real_, n)
-  ud <- rep(NA_real_, n)
+  # --- storage ---
+  hu <- numeric(n)
+  hd <- numeric(n)
+  ud <- numeric(n)
   uh <- rep(min_haz, n)
   
-  for (i in 1:(n - 1)) {
-    H0 <- lh_tgt[i]
-    U0 <- lu_tgt[i]
+  # --- main loop ---
+  for (i in seq_len(n - 1)) {
+    
+    H0 <- H[i]
+    U0 <- U[i]
     
     if ((H0 + U0) <= min_haz) {
       hu[i] <- min_haz
@@ -1004,47 +1019,57 @@ derive_noreturns_hazards <- function(age,
     }
     
     S1_tgt <- lx[i + 1]
-    U1_tgt <- lu_tgt[i + 1]
+    U1_tgt <- U[i + 1]
     
-    solve_hd_given_hu <- function(hu_i) {
+    # --- inner: solve hd for survival ---
+    solve_hd <- function(hu_i) {
+      
       f_hd <- function(hd_i) {
-        P <- make_P(hu = hu_i, hd = hd_i, Rx_i = Rx[i], dt = age_int)
-        nxt <- step_forward(H0, U0, P)
+        ud_i <- Rx[i] * hd_i
+        P <- make_P(hu_i, hd_i, ud_i, age_int, min_haz)
+        nxt <- step(H0, U0, P)
         (nxt["H"] + nxt["U"]) - S1_tgt
       }
       
       lo <- hd_bracket[1]
       hi <- hd_bracket[2]
+      
       f_lo <- f_hd(lo)
       f_hi <- f_hd(hi)
       
       k <- 0
-      while (is.finite(f_lo) && is.finite(f_hi) && f_lo * f_hi > 0 && k < 30) {
+      while (is.finite(f_lo) && is.finite(f_hi) && f_lo * f_hi > 0 && k < 25) {
         hi <- hi * 2
         f_hi <- f_hd(hi)
         k <- k + 1
       }
-      if (!is.finite(f_lo) || !is.finite(f_hi) || f_lo * f_hi > 0) return(NA_real_)
       
-      uniroot(f_hd, lower = lo, upper = hi, tol = tol, maxiter = maxiter)$root
+      if (!is.finite(f_lo) || !is.finite(f_hi) || f_lo * f_hi > 0) {
+        return(NA_real_)
+      }
+      
+      uniroot(f_hd, c(lo, hi), tol = tol, maxiter = maxiter)$root
     }
     
+    # --- outer: solve hu for U ---
     f_hu <- function(hu_i) {
-      hd_i <- solve_hd_given_hu(hu_i)
+      hd_i <- solve_hd(hu_i)
       if (!is.finite(hd_i)) return(NA_real_)
       
-      P <- make_P(hu = hu_i, hd = hd_i, Rx_i = Rx[i], dt = age_int)
-      nxt <- step_forward(H0, U0, P)
+      ud_i <- Rx[i] * hd_i
+      P <- make_P(hu_i, hd_i, ud_i, age_int, min_haz)
+      nxt <- step(H0, U0, P)
       nxt["U"] - U1_tgt
     }
     
     lo <- hu_bracket[1]
     hi <- hu_bracket[2]
+    
     f_lo <- f_hu(lo)
     f_hi <- f_hu(hi)
     
     k <- 0
-    while (is.finite(f_lo) && is.finite(f_hi) && f_lo * f_hi > 0 && k < 30) {
+    while (is.finite(f_lo) && is.finite(f_hi) && f_lo * f_hi > 0 && k < 25) {
       hi <- hi * 2
       f_hi <- f_hu(hi)
       k <- k + 1
@@ -1052,335 +1077,42 @@ derive_noreturns_hazards <- function(age,
     
     if (!is.finite(f_lo) || !is.finite(f_hi) || f_lo * f_hi > 0) {
       if (verbose) {
-        warning(
-          sprintf("Could not bracket hu root at age=%s (interval %s->%s). Using min_haz.",
-                  age[i], age[i], age[i + 1]),
-          call. = FALSE
-        )
+        warning(sprintf("No root for hu at age %s", age[i]), call. = FALSE)
       }
       hu[i] <- min_haz
-      hd[i] <- solve_hd_given_hu(hu[i])
-      if (!is.finite(hd[i])) hd[i] <- min_haz
+      hd[i] <- min_haz
       ud[i] <- Rx[i] * hd[i]
       next
     }
     
-    hu_i <- uniroot(f_hu, lower = lo, upper = hi, tol = tol, maxiter = maxiter)$root
-    hd_i <- solve_hd_given_hu(hu_i)
-    if (!is.finite(hd_i)) hd_i <- min_haz
+    hu_i <- uniroot(f_hu, c(lo, hi), tol = tol, maxiter = maxiter)$root
+    hd_i <- solve_hd(hu_i)
     
     hu[i] <- pmax(hu_i, min_haz)
     hd[i] <- pmax(hd_i, min_haz)
     ud[i] <- pmax(Rx[i] * hd[i], min_haz)
   }
   
-  extrap_last <- function(x) {
-    if (is.finite(x[n - 1]) && is.finite(x[n - 2]) && x[n - 1] > 0 && x[n - 2] > 0) {
-      exp(2 * log(x[n - 1]) - log(x[n - 2]))
-    } else if (is.finite(x[n - 1])) {
-      x[n - 1]
+  # --- last age extrapolation ---
+  extrap <- function(x) {
+    if (is.finite(x[n-1]) && is.finite(x[n-2]) && x[n-1] > 0 && x[n-2] > 0) {
+      exp(2 * log(x[n-1]) - log(x[n-2]))
     } else {
-      min_haz
+      x[n-1]
     }
   }
   
-  hu[n] <- pmax(extrap_last(hu), min_haz)
-  hd[n] <- pmax(extrap_last(hd), min_haz)
-  ud[n] <- pmax(extrap_last(ud), min_haz)
+  hu[n] <- pmax(extrap(hu), min_haz)
+  hd[n] <- pmax(extrap(hd), min_haz)
+  ud[n] <- pmax(extrap(ud), min_haz)
   uh[n] <- min_haz
   
   tibble::tibble(
-    age = rep(age, times = 4),
+    age = rep(age, 4),
     trans = rep(c("hu", "hd", "ud", "uh"), each = n),
     hazard = c(hu, hd, ud, uh)
   )
 }
-
-# ---------
-derive_returns_hazards_from_Rx <- function(age,
-                                           lx,
-                                           prev,
-                                           Rx,
-                                           age_int = 1,
-                                           bounds = c(1e-12, 5),
-                                           hu_bounds = NULL,
-                                           uh_bounds = NULL,
-                                           hu_0,
-                                           uh_0,
-                                           turnover_K = 10,
-                                           snap_tol = 1e-12,
-                                           line_tol = 1e-12,
-                                           eps_log = 1e-2,
-                                           refine_tol = 1e-20,
-                                           verbose = TRUE,
-                                           prevalence_point = NULL,
-                                           ...) {
-  if (!exists(".derive_returns_hazards_from_Rx_orig", inherits = FALSE)) {
-    stop("Original derive_returns_hazards_from_Rx() not found. Source simulation_functions.R first.",
-         call. = FALSE)
-  }
-  
-  age <- as.numeric(age)
-  lx  <- as.numeric(lx)
-  prev <- as.numeric(prev)
-  Rx  <- as.numeric(Rx)
-  hu_0 <- as.numeric(hu_0)
-  uh_0 <- as.numeric(uh_0)
-  
-  n <- length(age)
-  if (!all(c(length(lx), length(prev), length(Rx), length(hu_0), length(uh_0)) == n)) {
-    stop("age, lx, prev, Rx, hu_0, uh_0 must all have length n.", call. = FALSE)
-  }
-  
-  prev_state <- .coerce_state_prev(
-    prev = prev,
-    prevalence_point = prevalence_point,
-    lx = lx,
-    n = n
-  )
-  
-  # Call original implementation, but feed point prevalence wherever state targets are implied.
-  .derive_returns_hazards_from_Rx_orig(
-    age = age,
-    lx = lx,
-    prev = prev_state,
-    Rx = Rx,
-    age_int = age_int,
-    bounds = bounds,
-    hu_bounds = hu_bounds,
-    uh_bounds = uh_bounds,
-    hu_0 = hu_0,
-    uh_0 = uh_0,
-    turnover_K = turnover_K,
-    snap_tol = snap_tol,
-    line_tol = line_tol,
-    eps_log = eps_log,
-    refine_tol = refine_tol,
-    verbose = verbose,
-    ...
-  )
-}
-# derive_returns_hazards_from_Rx <- function(
-#     age,
-#     lx,
-#     prev,
-#     Rx,
-#     age_int = 1,
-#     bounds = c(1e-12, 2),
-#     hu_bounds = NULL,
-#     uh_bounds = NULL,
-#     maxit = 500,           # accepted for back-compat; unused
-#     reltol = 1e-14,        # accepted for back-compat; unused
-#     hu_0,
-#     uh_0,
-#     smooth_w = 0.5,        # accepted; unused
-#     curvature_w = 0.5,     # accepted; unused
-#     bound_w  = 1e-3,       # accepted; unused
-#     turnover_K = 1.2,
-#     turnover_w = 1e4,      # accepted; unused
-#     fit_w = 1e6,           # accepted; unused
-#     solver = c("project"), # accepted; unused (always projection+refine)
-#     snap_tol = 1e-20,      # diagnostic only
-#     verbose = FALSE,
-#     # snapper controls
-#     eps_log = 1e-2,
-#     tiny = 1e-14,
-#     line_tol = 1e-12,
-#     # NEW: numerical tighten + last-age behaviour
-#     final_refine = TRUE,
-#     refine_tol = 1e-16,
-#     refine_dist_w = 1e-6,
-#     extrap_last_age = TRUE
-# ){
-#   
-#   solver <- match.arg(solver)
-#   
-#   n <- length(age)
-#   stopifnot(length(lx) == n, length(prev) == n, length(Rx) == n,
-#             length(hu_0) == n, length(uh_0) == n)
-#   
-#   # Deterministic no-returns gives hd, ud, and HU lower bound (hu_nr)
-#   hz_nr <- derive_noreturns_hazards(
-#     age = age,
-#     lx = lx,
-#     prev = prev,
-#     Rx = Rx,
-#     age_int = age_int,
-#     verbose = FALSE
-#   )
-#   
-#   hd <- hz_nr[hz_nr$trans == "hd", "hazard", drop = TRUE]
-#   ud <- hz_nr[hz_nr$trans == "ud", "hazard", drop = TRUE]
-#   hu_nr <- hz_nr[hz_nr$trans == "hu", "hazard", drop = TRUE]
-#   
-#   # bounds
-#   if(is.null(hu_bounds)) hu_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
-#   if(is.null(uh_bounds)) uh_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
-#   
-#   hu_lo <- pmax(hu_bounds[,1], hu_nr)
-#   hu_hi <- hu_bounds[,2]
-#   uh_lo <- pmax(0, uh_bounds[,1])
-#   uh_hi <- uh_bounds[,2]
-#   
-#   states <- build_states_targets(age, lx, prev)
-#   
-#   hu_out <- numeric(n)
-#   uh_out <- numeric(n)
-#   p2_loss <- rep(NA_real_, n)
-#   degenerate <- rep(FALSE, n)
-#   
-#   for(i in seq_len(n)){
-#     
-#     cap <- turnover_K * (hu_0[i] + uh_0[i])
-#     
-#     # P1: exact no-returns point on the isocline
-#     p1 <- c(clamp(hu_nr[i], hu_lo[i], hu_hi[i]), 0)
-#     p1[2] <- clamp(p1[2], uh_lo[i], uh_hi[i])
-#     
-#     # P0: stage-1 point to project
-#     p0 <- c(clamp(hu_0[i], hu_lo[i], hu_hi[i]), clamp(uh_0[i], uh_lo[i], uh_hi[i]))
-#     
-#     # Build P2 to define isocline direction (best-effort)
-#     hu2_try <- clamp(p1[1] * exp(eps_log), hu_lo[i], hu_hi[i])
-#     uh_hi_eff <- min(uh_hi[i], cap - hu2_try)
-#     if(!is.finite(uh_hi_eff)) uh_hi_eff <- uh_hi[i]
-#     uh_hi_eff <- max(uh_hi_eff, uh_lo[i])
-#     
-#     sol2 <- solve_uh_given_hu(
-#       i, states, hd, ud,
-#       hu = hu2_try,
-#       uh_lo = uh_lo[i], uh_hi = uh_hi_eff,
-#       age_int = age_int, tiny = tiny
-#     )
-#     
-#     have_p2 <- is.finite(sol2$loss) && is.finite(sol2$uh) &&
-#       (abs(hu2_try - p1[1]) > 0) && (sol2$loss <= line_tol)
-#     
-#     if(!have_p2){
-#       uh_seed <- clamp(max(uh_lo[i], tiny) * exp(eps_log), uh_lo[i], uh_hi[i])
-#       hu_hi_eff <- min(hu_hi[i], cap - uh_seed)
-#       if(!is.finite(hu_hi_eff)) hu_hi_eff <- hu_hi[i]
-#       hu_hi_eff <- max(hu_hi_eff, hu_lo[i])
-#       
-#       sol2b <- solve_hu_given_uh(
-#         i, states, hd, ud,
-#         uh = uh_seed,
-#         hu_lo = hu_lo[i], hu_hi = hu_hi_eff,
-#         age_int = age_int
-#       )
-#       
-#       have_p2 <- is.finite(sol2b$loss) && is.finite(sol2b$hu) &&
-#         (abs(uh_seed - p1[2]) > 0) && (sol2b$loss <= line_tol)
-#       
-#       if(have_p2){
-#         p2 <- c(sol2b$hu, uh_seed)
-#         p2_loss[i] <- sol2b$loss
-#       } else {
-#         # accept best-effort direction if it differs from p1 (avoid degeneracy)
-#         if(is.finite(sol2$loss) && is.finite(sol2$uh) && abs(hu2_try - p1[1]) > 0){
-#           p2 <- c(hu2_try, sol2$uh)
-#           p2_loss[i] <- sol2$loss
-#           have_p2 <- TRUE
-#         } else if(is.finite(sol2b$loss) && is.finite(sol2b$hu) && abs(uh_seed - p1[2]) > 0){
-#           p2 <- c(sol2b$hu, uh_seed)
-#           p2_loss[i] <- sol2b$loss
-#           have_p2 <- TRUE
-#         } else {
-#           p2 <- p1
-#           have_p2 <- FALSE
-#         }
-#       }
-#     } else {
-#       p2 <- c(hu2_try, sol2$uh)
-#       p2_loss[i] <- sol2$loss
-#     }
-#     
-#     v <- p2 - p1
-#     if(sum(v*v) < 1e-30){
-#       degenerate[i] <- TRUE
-#       hu_hat <- p1[1]
-#       uh_hat <- p1[2]
-#     } else {
-#       
-#       # feasible t interval on the segment (bounds + turnover cap)
-#       feas <- clamp_t_feasible(
-#         a = p1, v = v,
-#         hu_lo = hu_lo[i], hu_hi = hu_hi[i],
-#         uh_lo = uh_lo[i], uh_hi = uh_hi[i],
-#         cap = cap
-#       )
-#       
-#       if(!isTRUE(feas$ok)){
-#         hu_hat <- p1[1]
-#         uh_hat <- p1[2]
-#       } else {
-#         # orthogonal projection parameter t
-#         pr <- project_point_to_line(p0, p1, v)
-#         t_proj <- clamp(pr$t, feas$t_lo, feas$t_hi)
-#         
-#         if(isTRUE(final_refine)){
-#           # refine along the line segment to remove expm/optimize numerical noise
-#           f_t <- function(t){
-#             pt <- p1 + t * v
-#             ls <- loss_one_age(i, states, hd, ud, hu = pt[1], uh = pt[2], age_int = age_int)
-#             ls + refine_dist_w * (t - t_proj)^2
-#           }
-#           opt <- optimize(f_t, interval = c(feas$t_lo, feas$t_hi), tol = refine_tol)
-#           t_star <- opt$minimum
-#         } else {
-#           t_star <- t_proj
-#         }
-#         
-#         p_star <- p1 + t_star * v
-#         hu_hat <- p_star[1]
-#         uh_hat <- p_star[2]
-#       }
-#     }
-#     
-#     hu_out[i] <- hu_hat
-#     uh_out[i] <- uh_hat
-#     
-#     if(verbose && (i %% 10 == 0 || i == 1 || i == n)){
-#       ls <- loss_one_age(i, states, hd, ud, hu = hu_out[i], uh = uh_out[i], age_int = age_int)
-#       message(sprintf("age %s: loss=%.3e  p2_loss=%s  deg=%s",
-#                       age[i], ls, format(p2_loss[i], scientific=TRUE, digits=2), degenerate[i]))
-#     }
-#   }
-#   
-#   # Optional: last-age extrapolation for returns hazards too (doesn't affect matching)
-#   if(isTRUE(extrap_last_age) && n >= 3){
-#     min_haz <- bounds[1]
-#     extrap_last <- function(x) {
-#       if (is.finite(x[n-1]) && is.finite(x[n-2]) && x[n-1] > 0 && x[n-2] > 0) {
-#         exp(2*log(x[n-1]) - log(x[n-2]))
-#       } else if (is.finite(x[n-1])) {
-#         x[n-1]
-#       } else {
-#         min_haz
-#       }
-#     }
-#     
-#     # Extrapolate and then enforce bounds + turnover cap
-#     hu_out[n] <- clamp(pmax(extrap_last(hu_out), min_haz), hu_lo[n], hu_hi[n])
-#     uh_out[n] <- clamp(pmax(extrap_last(uh_out), min_haz), uh_lo[n], uh_hi[n])
-#     
-#     cap_n <- turnover_K * (hu_0[n] + uh_0[n])
-#     if(is.finite(cap_n) && (hu_out[n] + uh_out[n] > cap_n)){
-#       # keep hu fixed, trim uh
-#       uh_out[n] <- max(uh_lo[n], cap_n - hu_out[n])
-#     }
-#   }
-#   
-#   out <- tibble::tibble(
-#     age = rep(age, times = 4),
-#     trans = rep(c("hd","hu","ud","uh"), each = n),
-#     hazard = c(hd, hu_out, ud, uh_out)
-#   )
-#   
-#   attr(out, "diagnostics") <- list(p2_loss = p2_loss, degenerate = degenerate)
-#   out
-# }
-
 make_candidates <- function(base_pars,
                             free_names,
                             V2,
@@ -1404,1173 +1136,919 @@ make_candidates <- function(base_pars,
   list(grid = combos, theta0 = theta0)
 }
 
-# ---- Exact returns snapper (isocline projection) ----
 
-`%||%` <- function(a,b) if(!is.null(a)) a else b
-clamp <- function(x, lo, hi) pmin(hi, pmax(lo, x))
 
-make_Q_returns <- function(hu, hd, uh, ud){
-  matrix(c(
-    -(hu + hd),  hu,        hd,
-    uh,        -(uh + ud), ud,
-    0,          0,         0
-  ), nrow = 3, byrow = TRUE)
-}
-if (!exists(".derive_returns_hazards_from_Rx_orig", inherits = FALSE) &&
-    exists("derive_returns_hazards_from_Rx", mode = "function")) {
-  .derive_returns_hazards_from_Rx_orig <- derive_returns_hazards_from_Rx
-}
-
-.coerce_state_prev <- function(prev,
-                               prevalence_point = NULL,
-                               lx = NULL,
-                               n = NULL) {
-  out <- if (!is.null(prevalence_point)) prevalence_point else prev
-  out <- as.numeric(out)
+derive_returns_hazard_starts <- function(
+    age,
+    lx,
+    prev_pt,
+    Rx,
+    theta_start,
+    age_int = 1,
+    pivot_age = 75,
+    shape_width = 5,
+    min_haz = 1e-12,
+    maxit = 1500,
+    factr = 1e6,
+    w_lx = 1,
+    w_prev = 1,
+    slope_floor = 1e-6,
+    verbose = TRUE
+) {
   
-  if (!is.null(n) && length(out) != n) {
-    stop("state prevalence vector must have length n.", call. = FALSE)
-  }
-  if (!is.null(lx) && length(out) != length(lx)) {
-    stop("state prevalence vector must match length(lx).", call. = FALSE)
-  }
-  out
-}
-
-build_states_targets <- function(age, lx, prev, prevalence_point = NULL) {
   age <- as.numeric(age)
-  lx  <- as.numeric(lx)
-  n   <- length(age)
+  lx <- as.numeric(lx)
+  prev_pt <- as.numeric(prev_pt)
+  n <- length(age)
   
-  if (length(lx) != n) {
-    stop("lx must have same length as age.", call. = FALSE)
-  }
+  if (n < 2) stop("Need at least 2 ages.", call. = FALSE)
+  if (length(lx) != n) stop("lx must match age.", call. = FALSE)
+  if (length(prev_pt) != n) stop("prev_pt must match age.", call. = FALSE)
   
-  prev_state <- .coerce_state_prev(
-    prev = prev,
-    prevalence_point = prevalence_point,
-    lx = lx,
-    n = n
-  )
+  if (length(Rx) == 1) Rx <- rep(as.numeric(Rx), n)
+  Rx <- as.numeric(Rx)
+  if (length(Rx) != n) stop("Rx must be length 1 or n.", call. = FALSE)
+  Rx <- pmax(Rx, min_haz)
   
-  prev_state <- pmin(pmax(prev_state, 0), 1)
-  
-  tibble::tibble(
+  # ---- exact no-returns backbone: fixes hd and ud ----
+  haz_nr <- derive_noreturns_hazards(
     age = age,
     lx = lx,
-    prev = prev_state,
-    lh = lx * (1 - prev_state),
-    lu = lx * prev_state
-  )
-}
-# build_states_targets <- function(age, lx, prev){
-#   n <- length(age)
-#   lH <- lx * (1 - prev)
-#   lU <- lx * prev
-#   lD <- 1 - lx
-#   nextHU <- cbind(lH, lU)
-#   if(n >= 2){
-#     nextHU[1:(n-1), ] <- cbind(lH[2:n], lU[2:n])
-#     nextHU[n, ] <- nextHU[n-1, ]
-#   }
-#   list(lH = lH, lU = lU, lD = lD, nextHU = nextHU)
-# }
-
-resid_one_age <- function(i, states, hd, ud, hu, uh, age_int = 1){
-  cur <- c(states$lH[i], states$lU[i], states$lD[i])
-  targ <- c(states$nextHU[i,1], states$nextHU[i,2])
-  Q <- make_Q_returns(hu=hu, hd=hd[i], uh=uh, ud=ud[i])
-  P <- expm::expm(Q * age_int)
-  nxt <- as.numeric(cur %*% P)
-  c(rH = nxt[1] - targ[1], rU = nxt[2] - targ[2])
-}
-
-loss_one_age <- function(i, states, hd, ud, hu, uh, age_int = 1){
-  r <- resid_one_age(i, states, hd, ud, hu, uh, age_int)
-  sum(r*r)
-}
-
-solve_uh_given_hu <- function(i, states, hd, ud, hu,
-                              uh_lo, uh_hi,
-                              age_int = 1,
-                              tiny = 1e-14){
-  if(!is.finite(hu) || hu <= 0) return(list(uh=NA_real_, loss=Inf))
-  if(uh_hi < uh_lo) return(list(uh=NA_real_, loss=Inf))
-  
-  f <- function(z){
-    uh <- exp(z) - tiny
-    uh <- clamp(uh, uh_lo, uh_hi)
-    loss_one_age(i, states, hd, ud, hu=hu, uh=uh, age_int=age_int)
-  }
-  zlo <- log(uh_lo + tiny)
-  zhi <- log(uh_hi + tiny)
-  opt <- optimize(f, interval = c(zlo, zhi), tol = 1e-20)
-  uh_hat <- clamp(exp(opt$minimum) - tiny, uh_lo, uh_hi)
-  list(uh = uh_hat, loss = opt$objective)
-}
-
-solve_hu_given_uh <- function(i, states, hd, ud, uh,
-                              hu_lo, hu_hi,
-                              age_int = 1){
-  if(!is.finite(uh) || uh < 0) return(list(hu=NA_real_, loss=Inf))
-  if(hu_hi < hu_lo) return(list(hu=NA_real_, loss=Inf))
-  
-  f <- function(loghu){
-    hu <- exp(loghu)
-    loss_one_age(i, states, hd, ud, hu=hu, uh=uh, age_int=age_int)
-  }
-  lo <- log(pmax(hu_lo, 1e-300))
-  hi <- log(pmax(hu_hi, 1e-300))
-  opt <- optimize(f, interval = c(lo, hi), tol = 1e-12)
-  hu_hat <- clamp(exp(opt$minimum), hu_lo, hu_hi)
-  list(hu = hu_hat, loss = opt$objective)
-}
-
-project_point_to_line <- function(p, a, v){
-  vv <- sum(v*v)
-  if(vv <= 0) return(list(t = 0, proj = a))
-  t <- sum((p - a) * v) / vv
-  list(t = t, proj = a + t * v)
-}
-
-clamp_t_feasible <- function(a, v,
-                             hu_lo, hu_hi,
-                             uh_lo, uh_hi,
-                             cap = Inf){
-  t_lo <- -Inf
-  t_hi <-  Inf
-  
-  add_ge <- function(beta, rhs){
-    if(abs(beta) < 1e-30){
-      if(rhs > 0) return(FALSE) else return(TRUE)
-    }
-    t0 <- rhs / beta
-    if(beta > 0) t_lo <<- max(t_lo, t0) else t_hi <<- min(t_hi, t0)
-    TRUE
-  }
-  add_le <- function(beta, rhs){
-    if(abs(beta) < 1e-30){
-      if(rhs < 0) return(FALSE) else return(TRUE)
-    }
-    t0 <- rhs / beta
-    if(beta > 0) t_hi <<- min(t_hi, t0) else t_lo <<- max(t_lo, t0)
-    TRUE
-  }
-  
-  if(!add_ge(v[1], hu_lo - a[1])) return(list(ok=FALSE))
-  if(!add_le(v[1], hu_hi - a[1])) return(list(ok=FALSE))
-  if(!add_ge(v[2], uh_lo - a[2])) return(list(ok=FALSE))
-  if(!add_le(v[2], uh_hi - a[2])) return(list(ok=FALSE))
-  
-  if(is.finite(cap)){
-    if(!add_le(v[1] + v[2], cap - (a[1] + a[2]))) return(list(ok=FALSE))
-  }
-  
-  ok <- is.finite(t_lo) && is.finite(t_hi) && (t_lo <= t_hi)
-  list(ok=ok, t_lo=t_lo, t_hi=t_hi)
-}
-
-
-# derive_returns_hazards_from_Rx <- function(
-#     age,
-#     lx,
-#     prev,
-#     Rx,
-#     age_int = 1,
-#     bounds = c(1e-12, 2),
-#     hu_bounds = NULL,
-#     uh_bounds = NULL,
-#     maxit = 500,           # accepted for back-compat; unused
-#     reltol = 1e-14,        # accepted for back-compat; unused
-#     hu_0,
-#     uh_0,
-#     smooth_w = 0.5,        # accepted; unused
-#     curvature_w = 0.5,     # accepted; unused
-#     bound_w  = 1e-3,       # accepted; unused
-#     turnover_K = 1.2,
-#     turnover_w = 1e4,      # accepted; unused
-#     fit_w = 1e6,           # accepted; unused
-#     solver = c("project"), # accepted; unused (always projection+refine)
-#     snap_tol = 1e-20,      # diagnostic only
-#     verbose = FALSE,
-#     # snapper controls
-#     eps_log = 1e-2,
-#     tiny = 1e-14,
-#     line_tol = 1e-12,
-#     # NEW: numerical tighten + last-age behaviour
-#     final_refine = TRUE,
-#     refine_tol = 1e-16,
-#     refine_dist_w = 1e-6,
-#     extrap_last_age = TRUE
-# ){
-#   
-#   solver <- match.arg(solver)
-#   
-#   n <- length(age)
-#   stopifnot(length(lx) == n, length(prev) == n, length(Rx) == n,
-#             length(hu_0) == n, length(uh_0) == n)
-#   
-#   # Deterministic no-returns gives hd, ud, and HU lower bound (hu_nr)
-#   hz_nr <- derive_noreturns_hazards(
-#     age = age,
-#     lx = lx,
-#     prev = prev,
-#     Rx = Rx,
-#     age_int = age_int,
-#     verbose = FALSE
-#   )
-#   
-#   hd <- hz_nr[hz_nr$trans == "hd", "hazard", drop = TRUE]
-#   ud <- hz_nr[hz_nr$trans == "ud", "hazard", drop = TRUE]
-#   hu_nr <- hz_nr[hz_nr$trans == "hu", "hazard", drop = TRUE]
-#   
-#   # bounds
-#   if(is.null(hu_bounds)) hu_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
-#   if(is.null(uh_bounds)) uh_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
-#   
-#   hu_lo <- pmax(hu_bounds[,1], hu_nr)
-#   hu_hi <- hu_bounds[,2]
-#   uh_lo <- pmax(0, uh_bounds[,1])
-#   uh_hi <- uh_bounds[,2]
-#   
-#   states <- build_states_targets(age, lx, prev)
-#   
-#   hu_out <- numeric(n)
-#   uh_out <- numeric(n)
-#   p2_loss <- rep(NA_real_, n)
-#   degenerate <- rep(FALSE, n)
-#   
-#   for(i in seq_len(n)){
-#     
-#     cap <- turnover_K * (hu_0[i] + uh_0[i])
-#     
-#     # P1: exact no-returns point on the isocline
-#     p1 <- c(clamp(hu_nr[i], hu_lo[i], hu_hi[i]), 0)
-#     p1[2] <- clamp(p1[2], uh_lo[i], uh_hi[i])
-#     
-#     # P0: stage-1 point to project
-#     p0 <- c(clamp(hu_0[i], hu_lo[i], hu_hi[i]), clamp(uh_0[i], uh_lo[i], uh_hi[i]))
-#     
-#     # Build P2 to define isocline direction (best-effort)
-#     hu2_try <- clamp(p1[1] * exp(eps_log), hu_lo[i], hu_hi[i])
-#     uh_hi_eff <- min(uh_hi[i], cap - hu2_try)
-#     if(!is.finite(uh_hi_eff)) uh_hi_eff <- uh_hi[i]
-#     uh_hi_eff <- max(uh_hi_eff, uh_lo[i])
-#     
-#     sol2 <- solve_uh_given_hu(
-#       i, states, hd, ud,
-#       hu = hu2_try,
-#       uh_lo = uh_lo[i], uh_hi = uh_hi_eff,
-#       age_int = age_int, tiny = tiny
-#     )
-#     
-#     have_p2 <- is.finite(sol2$loss) && is.finite(sol2$uh) &&
-#       (abs(hu2_try - p1[1]) > 0) && (sol2$loss <= line_tol)
-#     
-#     if(!have_p2){
-#       uh_seed <- clamp(max(uh_lo[i], tiny) * exp(eps_log), uh_lo[i], uh_hi[i])
-#       hu_hi_eff <- min(hu_hi[i], cap - uh_seed)
-#       if(!is.finite(hu_hi_eff)) hu_hi_eff <- hu_hi[i]
-#       hu_hi_eff <- max(hu_hi_eff, hu_lo[i])
-#       
-#       sol2b <- solve_hu_given_uh(
-#         i, states, hd, ud,
-#         uh = uh_seed,
-#         hu_lo = hu_lo[i], hu_hi = hu_hi_eff,
-#         age_int = age_int
-#       )
-#       
-#       have_p2 <- is.finite(sol2b$loss) && is.finite(sol2b$hu) &&
-#         (abs(uh_seed - p1[2]) > 0) && (sol2b$loss <= line_tol)
-#       
-#       if(have_p2){
-#         p2 <- c(sol2b$hu, uh_seed)
-#         p2_loss[i] <- sol2b$loss
-#       } else {
-#         # accept best-effort direction if it differs from p1 (avoid degeneracy)
-#         if(is.finite(sol2$loss) && is.finite(sol2$uh) && abs(hu2_try - p1[1]) > 0){
-#           p2 <- c(hu2_try, sol2$uh)
-#           p2_loss[i] <- sol2$loss
-#           have_p2 <- TRUE
-#         } else if(is.finite(sol2b$loss) && is.finite(sol2b$hu) && abs(uh_seed - p1[2]) > 0){
-#           p2 <- c(sol2b$hu, uh_seed)
-#           p2_loss[i] <- sol2b$loss
-#           have_p2 <- TRUE
-#         } else {
-#           p2 <- p1
-#           have_p2 <- FALSE
-#         }
-#       }
-#     } else {
-#       p2 <- c(hu2_try, sol2$uh)
-#       p2_loss[i] <- sol2$loss
-#     }
-#     
-#     v <- p2 - p1
-#     if(sum(v*v) < 1e-30){
-#       degenerate[i] <- TRUE
-#       hu_hat <- p1[1]
-#       uh_hat <- p1[2]
-#     } else {
-#       
-#       # feasible t interval on the segment (bounds + turnover cap)
-#       feas <- clamp_t_feasible(
-#         a = p1, v = v,
-#         hu_lo = hu_lo[i], hu_hi = hu_hi[i],
-#         uh_lo = uh_lo[i], uh_hi = uh_hi[i],
-#         cap = cap
-#       )
-#       
-#       if(!isTRUE(feas$ok)){
-#         hu_hat <- p1[1]
-#         uh_hat <- p1[2]
-#       } else {
-#         # orthogonal projection parameter t
-#         pr <- project_point_to_line(p0, p1, v)
-#         t_proj <- clamp(pr$t, feas$t_lo, feas$t_hi)
-#         
-#         if(isTRUE(final_refine)){
-#           # refine along the line segment to remove expm/optimize numerical noise
-#           f_t <- function(t){
-#             pt <- p1 + t * v
-#             ls <- loss_one_age(i, states, hd, ud, hu = pt[1], uh = pt[2], age_int = age_int)
-#             ls + refine_dist_w * (t - t_proj)^2
-#           }
-#           opt <- optimize(f_t, interval = c(feas$t_lo, feas$t_hi), tol = refine_tol)
-#           t_star <- opt$minimum
-#         } else {
-#           t_star <- t_proj
-#         }
-#         
-#         p_star <- p1 + t_star * v
-#         hu_hat <- p_star[1]
-#         uh_hat <- p_star[2]
-#         uh_hat <- solve_uh_given_hu
-#       }
-#     }
-#     
-#     hu_out[i] <- hu_hat
-#     uh_out[i] <- uh_hat
-#     
-#     if(verbose && (i %% 10 == 0 || i == 1 || i == n)){
-#       ls <- loss_one_age(i, states, hd, ud, hu = hu_out[i], uh = uh_out[i], age_int = age_int)
-#       message(sprintf("age %s: loss=%.3e  p2_loss=%s  deg=%s",
-#                       age[i], ls, format(p2_loss[i], scientific=TRUE, digits=2), degenerate[i]))
-#     }
-#   }
-#   
-#   # Optional: last-age extrapolation for returns hazards too (doesn't affect matching)
-#   if(isTRUE(extrap_last_age) && n >= 3){
-#     min_haz <- bounds[1]
-#     extrap_last <- function(x) {
-#       if (is.finite(x[n-1]) && is.finite(x[n-2]) && x[n-1] > 0 && x[n-2] > 0) {
-#         exp(2*log(x[n-1]) - log(x[n-2]))
-#       } else if (is.finite(x[n-1])) {
-#         x[n-1]
-#       } else {
-#         min_haz
-#       }
-#     }
-#     
-#     # Extrapolate and then enforce bounds + turnover cap
-#     hu_out[n] <- clamp(pmax(extrap_last(hu_out), min_haz), hu_lo[n], hu_hi[n])
-#     uh_out[n] <- clamp(pmax(extrap_last(uh_out), min_haz), uh_lo[n], uh_hi[n])
-#     
-#     cap_n <- turnover_K * (hu_0[n] + uh_0[n])
-#     if(is.finite(cap_n) && (hu_out[n] + uh_out[n] > cap_n)){
-#       # keep hu fixed, trim uh
-#       uh_out[n] <- max(uh_lo[n], cap_n - hu_out[n])
-#     }
-#   }
-#   
-#   out <- tibble::tibble(
-#     age = rep(age, times = 4),
-#     trans = rep(c("hd","hu","ud","uh"), each = n),
-#     hazard = c(hd, hu_out, ud, uh_out)
-#   )
-#   
-#   attr(out, "diagnostics") <- list(p2_loss = p2_loss, degenerate = degenerate)
-#   out
-# }
-# Drop-in replacement for derive_returns_hazards_from_Rx()
-#
-# Intended use:
-#   source("R/simulation_functions.R")
-#   source("derive_returns_hazards_from_Rx_inplace_refine.R")
-#
-# This redefines derive_returns_hazards_from_Rx() using the existing machinery
-# already present in simulation_functions.R, with one minimal extra refinement:
-# immediately after the line-snap yields (hu_hat, uh_hat), hold hu_hat fixed and
-# call solve_uh_given_hu() one more time to put the point on the implied one-age
-# curve for that hu.
-
-# Experimental curve-snap alternative to derive_returns_hazards_from_Rx()
-#
-# Assumes simulation_functions.R has already been sourced, so that the
-# following helpers already exist in the environment:
-#   derive_noreturns_hazards()
-#   build_states_targets()
-#   solve_uh_given_hu()
-#   solve_hu_given_uh()
-#   loss_one_age()
-#   clamp()
-#   clamp_t_feasible()
-#   project_point_to_line()
-#
-# Idea:
-#   Instead of snapping p0 = (hu0, uh0) to the detected line segment between
-#   p1 and p2, use that line only to construct a local search bracket.
-#   Then, within that bracket, solve the exact one-age curve numerically:
-#     hu -> uh_hat(hu) via solve_uh_given_hu()
-#   and minimize squared distance from p0 to the curve point
-#     (hu, uh_hat(hu)).
-#
-# This is intentionally minimal and reuses the existing machinery.
-
-.curve_snap_one_age <- function(i,
-                                p0,
-                                p1,
-                                p2,
-                                states,
-                                hd,
-                                ud,
-                                hu_lo,
-                                hu_hi,
-                                uh_lo,
-                                uh_hi,
-                                cap,
-                                age_int,
-                                tiny,
-                                curve_tol,
-                                curve_pad_mult,
-                                curve_pad_abs,
-                                curve_loss_w,
-                                fallback_to_line = TRUE) {
-  
-  v <- p2 - p1
-  
-  # Degenerate / vertical-ish line fallback
-  if (!all(is.finite(v)) || sum(v * v) < 1e-30 || abs(v[1]) < 1e-14) {
-    if (isTRUE(fallback_to_line)) {
-      return(list(
-        hu = p1[1],
-        uh = p1[2],
-        loss = loss_one_age(i, states, hd, ud, hu = p1[1], uh = p1[2], age_int = age_int),
-        method = "fallback_p1",
-        ok = TRUE
-      ))
-    }
-    return(list(hu = NA_real_, uh = NA_real_, loss = Inf, method = "failed", ok = FALSE))
-  }
-  
-  feas <- clamp_t_feasible(
-    a = p1, v = v,
-    hu_lo = hu_lo, hu_hi = hu_hi,
-    uh_lo = uh_lo, uh_hi = uh_hi,
-    cap = cap
+    prev_pt = prev_pt,
+    Rx = Rx,
+    age_int = age_int,
+    min_haz = min_haz,
+    tol = 1e-14,
+    maxiter = 100,
+    verbose = FALSE
   )
   
-  if (!isTRUE(feas$ok)) {
-    return(list(
-      hu = p1[1],
-      uh = p1[2],
-      loss = loss_one_age(i, states, hd, ud, hu = p1[1], uh = p1[2], age_int = age_int),
-      method = "fallback_p1",
-      ok = TRUE
-    ))
+  hd_nr <- haz_nr %>% dplyr::filter(trans == "hd") %>% dplyr::arrange(age) %>% dplyr::pull(hazard)
+  ud_nr <- haz_nr %>% dplyr::filter(trans == "ud") %>% dplyr::arrange(age) %>% dplyr::pull(hazard)
+  hu_nr <- haz_nr %>% dplyr::filter(trans == "hu") %>% dplyr::arrange(age) %>% dplyr::pull(hazard)
+  
+  # ---- extract 6 starting values for hu/uh soft-kink ----
+  # accepts:
+  #   - a named 6-vector: i_hu, s1_hu, s2_hu, i_uh, s1_uh, s2_uh
+  #   - an 8/12 full parameter vector, from which hu/uh pieces are extracted
+  th0_full <- as_par_vec(theta_start)
+  
+  get_first_existing <- function(x, nms) {
+    hit <- nms[nms %in% names(x)]
+    if (length(hit) == 0) return(NA_real_)
+    as.numeric(x[[hit[1]]])
   }
   
-  pr <- project_point_to_line(p0, p1, v)
-  t_proj <- clamp(pr$t, feas$t_lo, feas$t_hi)
-  p_proj <- p1 + t_proj * v
-  hu_proj <- p_proj[1]
+  th0 <- c(
+    i_hu  = get_first_existing(th0_full, c("i_hu")),
+    s1_hu = get_first_existing(th0_full, c("s1_hu", "s_hu")),
+    s2_hu = get_first_existing(th0_full, c("s2_hu", "s_hu")),
+    i_uh  = get_first_existing(th0_full, c("i_uh")),
+    s1_uh = get_first_existing(th0_full, c("s1_uh", "s_uh")),
+    s2_uh = get_first_existing(th0_full, c("s2_uh", "s_uh"))
+  )
   
-  # Use the feasible line segment only to define a local hu bracket.
-  # The actual snap is to the exact curve, not to the line.
-  t_end <- c(feas$t_lo, feas$t_hi)
-  hu_end <- p1[1] + t_end * v[1]
-  hu_seg_lo <- max(hu_lo, min(hu_end), p1[1])
-  hu_seg_hi <- min(hu_hi, max(hu_end), cap - uh_lo)
-  
-  if (!is.finite(hu_seg_lo) || !is.finite(hu_seg_hi) || hu_seg_lo >= hu_seg_hi) {
-    hu_seg_lo <- max(hu_lo, p1[1])
-    hu_seg_hi <- min(hu_hi, cap - uh_lo)
+  if (any(!is.finite(th0))) {
+    stop(
+      "theta_start must supply hu/uh soft-kink starts: i_hu, s1_hu, s2_hu, i_uh, s1_uh, s2_uh ",
+      "(or an 8/12-vector containing the corresponding hu/uh entries).",
+      call. = FALSE
+    )
   }
   
-  pad <- max(curve_pad_abs, curve_pad_mult * abs(hu_proj))
-  lo <- max(hu_seg_lo, hu_proj - pad)
-  hi <- min(hu_seg_hi, hu_proj + pad)
-  
-  # Ensure bracket is valid; otherwise fall back to the full feasible hu segment.
-  if (!is.finite(lo) || !is.finite(hi) || lo >= hi) {
-    lo <- hu_seg_lo
-    hi <- hu_seg_hi
-  }
-  
-  if (!is.finite(lo) || !is.finite(hi) || lo >= hi) {
-    return(list(
-      hu = p_proj[1],
-      uh = p_proj[2],
-      loss = loss_one_age(i, states, hd, ud, hu = p_proj[1], uh = p_proj[2], age_int = age_int),
-      method = "fallback_line",
-      ok = TRUE
-    ))
-  }
-  
-  obj_hu <- function(hu) {
-    uh_hi_eff <- min(uh_hi, cap - hu)
-    if (!is.finite(uh_hi_eff) || uh_hi_eff < uh_lo) return(.Machine$double.xmax / 100)
+  # ---- soft-kink expander for just hu and uh ----
+  expand_two_softkink <- function(theta6, age, age_int, pivot_age, shape_width, min_haz) {
+    theta6 <- as.numeric(theta6)
+    names(theta6) <- c("i_hu","s1_hu","s2_hu","i_uh","s1_uh","s2_uh")
     
-    sol <- solve_uh_given_hu(
-      i, states, hd, ud,
-      hu = hu,
-      uh_lo = uh_lo, uh_hi = uh_hi_eff,
-      age_int = age_int, tiny = tiny
+    age_mid <- age + age_int / 2
+    a0 <- min(age)
+    x <- age_mid - a0
+    
+    softplus <- function(z) log1p(exp(z))
+    z  <- (age_mid - pivot_age) / shape_width
+    z0 <- (min(age_mid) - pivot_age) / shape_width
+    kink_term <- shape_width * (softplus(z) - softplus(z0))
+    
+    log_hu <- theta6["i_hu"] + theta6["s1_hu"] * x +
+      (theta6["s2_hu"] - theta6["s1_hu"]) * kink_term
+    
+    log_uh <- theta6["i_uh"] + theta6["s1_uh"] * x +
+      (theta6["s2_uh"] - theta6["s1_uh"]) * kink_term
+    
+    n <- length(age)
+    
+    tibble::tibble(
+      age = rep(age, times = 2L),
+      trans = rep(c("hu", "uh"), each = n),
+      hazard = c(
+        pmax(exp(log_hu), min_haz),
+        pmax(exp(log_uh), min_haz)
+      )
+    )
+  }
+  
+  # ---- objective: fixed hd/ud, optimize hu/uh over whole age schedule ----
+  objective <- function(par6,
+                        age,
+                        lx,
+                        prev_pt,
+                        hd_nr,
+                        ud_nr,
+                        age_int,
+                        pivot_age,
+                        shape_width,
+                        min_haz,
+                        w_lx,
+                        w_prev) {
+    
+    haz_two <- expand_two_softkink(
+      theta6 = par6,
+      age = age,
+      age_int = age_int,
+      pivot_age = pivot_age,
+      shape_width = shape_width,
+      min_haz = min_haz
     )
     
-    if (!is.finite(sol$uh) || !is.finite(sol$loss)) return(.Machine$double.xmax / 100)
+    hu_vec <- haz_two %>% dplyr::filter(trans == "hu") %>% dplyr::arrange(age) %>% dplyr::pull(hazard)
+    uh_vec <- haz_two %>% dplyr::filter(trans == "uh") %>% dplyr::arrange(age) %>% dplyr::pull(hazard)
     
-    d2 <- (hu - p0[1])^2 + (sol$uh - p0[2])^2
-    d2 + curve_loss_w * sol$loss
+    haz_all <- tibble::tibble(
+      age = rep(age, times = 4L),
+      trans = rep(c("hu", "hd", "ud", "uh"), each = n),
+      hazard = c(hu_vec, hd_nr, ud_nr, uh_vec)
+    )
+    
+    P <- haz_to_probs(haz_all, age = age, age_int = age_int)
+    lt <- calculate_lt(P, init = c(H = 1, U = 0), age_int = age_int, terminal = "point")
+    
+    # exact-age targets: use prevalence_point, not interval prevalence
+    lx_pred <- lt$lx
+    prev_pred <- lt$prevalence_point
+    
+    loss_lx <- sum((lx_pred - lx)^2, na.rm = TRUE)
+    loss_prev <- sum((prev_pred - prev_pt)^2, na.rm = TRUE)
+    
+    w_lx * loss_lx + w_prev * loss_prev
   }
   
-  opt <- optimize(obj_hu, interval = c(lo, hi), tol = curve_tol)
-  hu_star <- unname(opt$minimum)
-  uh_hi_eff <- min(uh_hi, cap - hu_star)
-  
-  sol_star <- solve_uh_given_hu(
-    i, states, hd, ud,
-    hu = hu_star,
-    uh_lo = uh_lo, uh_hi = uh_hi_eff,
-    age_int = age_int, tiny = tiny
+  # ---- simple bounds consistent with your usual sign conventions ----
+  lower <- c(
+    i_hu  = -Inf,
+    s1_hu =  slope_floor,
+    s2_hu =  slope_floor,
+    i_uh  = -Inf,
+    s1_uh = -Inf,
+    s2_uh = -Inf
   )
   
-  if (!is.finite(sol_star$uh) || !is.finite(sol_star$loss)) {
-    return(list(
-      hu = p_proj[1],
-      uh = p_proj[2],
-      loss = loss_one_age(i, states, hd, ud, hu = p_proj[1], uh = p_proj[2], age_int = age_int),
-      method = "fallback_line",
-      ok = TRUE
-    ))
+  upper <- c(
+    i_hu  = Inf,
+    s1_hu = Inf,
+    s2_hu = Inf,
+    i_uh  = Inf,
+    s1_uh = -slope_floor,
+    s2_uh = -slope_floor
+  )
+  
+  opt <- optim(
+    par = th0,
+    fn = objective,
+    method = "L-BFGS-B",
+    lower = lower,
+    upper = upper,
+    control = list(maxit = maxit, factr = factr),
+    age = age,
+    lx = lx,
+    prev_pt = prev_pt,
+    hd_nr = hd_nr,
+    ud_nr = ud_nr,
+    age_int = age_int,
+    pivot_age = pivot_age,
+    shape_width = shape_width,
+    min_haz = min_haz,
+    w_lx = w_lx,
+    w_prev = w_prev
+  )
+  
+  if (verbose) {
+    message("derive_returns_hazard_starts(): optim convergence = ", opt$convergence,
+            "; objective = ", signif(opt$value, 6))
   }
   
-  list(
-    hu = hu_star,
-    uh = sol_star$uh,
-    loss = sol_star$loss,
-    method = "curve",
-    ok = TRUE,
-    hu_proj = hu_proj,
-    bracket_lo = lo,
-    bracket_hi = hi,
-    objective = opt$objective
+  haz_two <- expand_two_softkink(
+    theta6 = opt$par,
+    age = age,
+    age_int = age_int,
+    pivot_age = pivot_age,
+    shape_width = shape_width,
+    min_haz = min_haz
+  )
+  
+  hu_vec <- haz_two %>% dplyr::filter(trans == "hu") %>% dplyr::arrange(age) %>% dplyr::pull(hazard)
+  uh_vec <- haz_two %>% dplyr::filter(trans == "uh") %>% dplyr::arrange(age) %>% dplyr::pull(hazard)
+  
+  haz_out <- tibble::tibble(
+    age = rep(age, 4),
+    trans = rep(c("hu", "hd", "ud", "uh"), each = n),
+    hazard = c(hu_vec, hd_nr, ud_nr, uh_vec)
+  )
+  
+  attr(haz_out, "theta_start_6") <- th0
+  attr(haz_out, "theta_hat_6") <- opt$par
+  attr(haz_out, "optim") <- opt
+  
+  haz_out
+}
+# -----------------------------------------------------------------------------
+# These functions replace derive_returns_hazards(),
+# but note I'd still like to work in haz_returns_starts()
+# creation and Rx df creation in this workflow, i.e.
+# that the incoming data should be ground_summary and
+# theta_list, (I think); the same tol arg can be used for everything
+
+derive_returns_hazards_precorrection <- function(
+    age,
+    lx,
+    prev_pt,
+    Rx,
+    hu_target = NULL,
+    uh_target = NULL,
+    age_int = 1,
+    anchor_age = 70,
+    min_haz = 1e-12,
+    tol = 1e-14,
+    maxiter = 100,
+    hd_bracket = c(1e-12, 5),
+    uh_bracket = c(1e-12, 5),
+    diag_tol = 1e-12,
+    world_id = NULL,
+    verbose = TRUE
+) {
+  
+  age <- as.numeric(age)
+  lx <- as.numeric(lx)
+  prev_pt <- as.numeric(prev_pt)
+  n <- length(age)
+  
+  if (n < 2) stop("Need at least 2 ages.", call. = FALSE)
+  if (length(lx) != n) stop("lx must match age.", call. = FALSE)
+  if (length(prev_pt) != n) stop("prev_pt must match age.", call. = FALSE)
+  
+  Rx <- if (length(Rx) == 1) rep(Rx, n) else as.numeric(Rx)
+  if (length(Rx) != n) stop("Rx must be length 1 or n.", call. = FALSE)
+  Rx <- pmax(Rx, min_haz)
+  
+  nr <- derive_noreturns_hazards(
+    age = age,
+    lx = lx,
+    prev_pt = prev_pt,
+    Rx = Rx,
+    age_int = age_int,
+    min_haz = min_haz,
+    tol = tol,
+    maxiter = maxiter,
+    verbose = FALSE
+  )
+  
+  hu_nr <- nr |> dplyr::filter(trans == "hu") |> dplyr::arrange(age) |> dplyr::pull(hazard)
+  hd_nr <- nr |> dplyr::filter(trans == "hd") |> dplyr::arrange(age) |> dplyr::pull(hazard)
+  
+  hu <- if (is.null(hu_target)) hu_nr else pmax(as.numeric(hu_target), min_haz)
+  if (length(hu) != n) stop("hu_target must match age.", call. = FALSE)
+  
+  if (!is.null(uh_target)) {
+    uh_target <- pmax(as.numeric(uh_target), min_haz)
+    if (length(uh_target) != n) stop("uh_target must match age.", call. = FALSE)
+  }
+  
+  states <- build_states_targets(age, lx, prev_pt)
+  
+  hd <- rep(NA_real_, n)
+  uh <- rep(NA_real_, n)
+  ud <- rep(NA_real_, n)
+  
+  sanitize_seed <- function(seed, fallback) {
+    seed <- as.numeric(seed)[1]
+    fallback <- as.numeric(fallback)[1]
+    if (!is.finite(seed) || seed <= 0) seed <- fallback
+    if (!is.finite(seed) || seed <= 0) seed <- min_haz
+    seed
+  }
+  
+  safe_step <- function(H0, U0, hu, hd, uh, ud) {
+    if (any(!is.finite(c(H0,U0,hu,hd,uh,ud)))) return(c(H=NA,U=NA))
+    Q <- tryCatch(make_Q_returns(hu, hd, uh, ud), error=function(e) NULL)
+    if (is.null(Q)) return(c(H=NA,U=NA))
+    P <- tryCatch(expm::expm(Q * age_int), error=function(e) NULL)
+    if (is.null(P)) return(c(H=NA,U=NA))
+    v <- as.numeric(c(H0,U0,0) %*% P)
+    c(H=v[1], U=v[2])
+  }
+  
+  solve_hd <- function(hu, uh, Rx, H0, U0, S1, seed) {
+    seed <- sanitize_seed(seed, hd_bracket[1])
+    
+    f <- function(hd) {
+      ud <- Rx * hd
+      nxt <- safe_step(H0,U0,hu,hd,uh,ud)
+      (nxt["H"] + nxt["U"]) - S1
+    }
+    
+    tryCatch(
+      uniroot(f, c(min_haz,5), tol=tol, maxiter=maxiter)$root,
+      error=function(e) NA_real_
+    )
+  }
+  
+  solve_exact <- function(i, hd_seed, uh_seed) {
+    hd_seed <- sanitize_seed(hd_seed, hd_nr[i])
+    uh_seed <- sanitize_seed(uh_seed, if(!is.null(uh_target)) uh_target[i] else min_haz)
+    
+    H0 <- states$lH[i]
+    U0 <- states$lU[i]
+    S1 <- sum(states$nextHU[i,])
+    U1 <- states$nextHU[i,2]
+    
+    f <- function(uh_val) {
+      hd_val <- solve_hd(hu[i], uh_val, Rx[i], H0, U0, S1, hd_seed)
+      nxt <- safe_step(H0,U0,hu[i],hd_val,uh_val,Rx[i]*hd_val)
+      nxt["U"] - U1
+    }
+    
+    uh_val <- tryCatch(
+      uniroot(f, c(min_haz,5), tol=tol, maxiter=maxiter)$root,
+      error=function(e) NA_real_
+    )
+    
+    if (!is.finite(uh_val)) return(list(hd=NA,uh=NA))
+    
+    hd_val <- solve_hd(hu[i], uh_val, Rx[i], H0, U0, S1, hd_seed)
+    if (!is.finite(hd_val)) return(list(hd=NA,uh=NA))
+    
+    list(hd=hd_val, uh=uh_val)
+  }
+  
+  make_smooth_uh_ref <- function(i) {
+    idx <- seq.int(i + 1, min(i + 3, n - 1))
+    idx <- idx[is.finite(uh[idx]) & uh[idx] > 0]
+    
+    if (length(idx) >= 2) {
+      df_fit <- data.frame(
+        age = age[idx],
+        log_uh = log(uh[idx])
+      )
+      fit <- stats::lm(log_uh ~ age, data = df_fit)
+      ref <- as.numeric(exp(stats::predict(
+        fit,
+        newdata = data.frame(age = age[i])
+      )))[1]
+    } else if (i + 1 <= n - 1 && is.finite(uh[i + 1]) && uh[i + 1] > 0) {
+      ref <- uh[i + 1]
+    } else if (!is.null(uh_target)) {
+      ref <- uh_target[i]
+    } else {
+      ref <- min_haz
+    }
+    
+    pmax(ref, min_haz)
+  }
+  # --- anchor ---
+  anchor <- which.min(abs(age - anchor_age))
+  anchor <- max(1, min(anchor, n-1))
+  
+  sol <- solve_exact(anchor, hd_nr[anchor], uh_target[anchor])
+  if (is.finite(sol$hd)) {
+    hd[anchor] <- sol$hd
+    uh[anchor] <- sol$uh
+    ud[anchor] <- Rx[anchor]*hd[anchor]
+  } else {
+    hd[anchor] <- hd_nr[anchor]
+    uh[anchor] <- uh_target[anchor]
+    ud[anchor] <- Rx[anchor]*hd[anchor]
+  }
+  
+  # --- forward ---
+  for (i in seq(anchor+1, n-1)) {
+    sol <- solve_exact(i, hd[i-1], uh[i-1])
+    if (is.finite(sol$hd)) {
+      hd[i] <- sol$hd
+      uh[i] <- sol$uh
+    } else {
+      hd[i] <- hd[i-1]
+      uh[i] <- uh[i-1]
+    }
+    ud[i] <- Rx[i]*hd[i]
+  }
+  
+  # --- backward ---
+  for (i in seq(anchor-1,1,-1)) {
+    sol <- solve_exact(i, hd[i+1], uh[i+1])
+    if (is.finite(sol$hd)) {
+      hd[i] <- sol$hd
+      uh[i] <- sol$uh
+    } else {
+      uh_ref <- make_smooth_uh_ref(i)
+      hd_ref <- solve_hd(hu[i], uh_ref, Rx[i],
+                         states$lH[i], states$lU[i],
+                         sum(states$nextHU[i,]), hd[i+1])
+      
+      if (is.finite(hd_ref)) {
+        hd[i] <- hd_ref
+        uh[i] <- uh_ref
+      } else {
+        hd[i] <- hd[i+1]
+        uh[i] <- uh[i+1]
+      }
+    }
+    ud[i] <- Rx[i]*hd[i]
+  }
+  
+  dplyr::bind_rows(
+    tibble::tibble(age=age, trans="hu", hazard=hu),
+    tibble::tibble(age=age, trans="hd", hazard=hd),
+    tibble::tibble(age=age, trans="ud", hazard=ud),
+    tibble::tibble(age=age, trans="uh", hazard=uh)
+  )
+}
+# -----------------------------------------------------------------------------
+
+
+diagnose_returns_branch <- function(
+    age,
+    lx,
+    prev_pt,
+    Rx,
+    haz,
+    age_int = 1,
+    age_max = 55,
+    hu_bounds_mult = c(0.7, 2.0),
+    n_bracket = 21,
+    n_refine = 20,
+    min_haz = 1e-12,
+    tol = 1e-12,
+    maxiter = 1000
+) {
+  
+  n <- length(age)
+  
+  hu0 <- haz |> dplyr::filter(trans=="hu") |> dplyr::arrange(age) |> dplyr::pull(hazard)
+  uh0 <- haz |> dplyr::filter(trans=="uh") |> dplyr::arrange(age) |> dplyr::pull(hazard)
+  hd0 <- haz |> dplyr::filter(trans=="hd") |> dplyr::arrange(age) |> dplyr::pull(hazard)
+  
+  states <- build_states_targets(age, lx, prev_pt)
+  
+  safe_step <- function(H0,U0,hu,hd,uh,ud){
+    Q <- make_Q_returns(hu,hd,uh,ud)
+    P <- expm::expm(Q * age_int)
+    v <- as.numeric(c(H0,U0,0) %*% P)
+    c(H=v[1],U=v[2])
+  }
+  
+  solve_hd <- function(hu,uh,Rx,H0,U0,S1,seed){
+    f <- function(hd){
+      ud <- Rx*hd
+      nxt <- safe_step(H0,U0,hu,hd,uh,ud)
+      (nxt["H"]+nxt["U"]) - S1
+    }
+    tryCatch(uniroot(f,c(min_haz,5),tol=tol,maxiter=maxiter)$root,
+             error=function(e) NA_real_)
+  }
+  
+  solve_uh <- function(i,hu){
+    H0 <- states$lH[i]; U0 <- states$lU[i]
+    H1 <- states$nextHU[i,1]; U1 <- states$nextHU[i,2]
+    S1 <- H1 + U1
+    
+    f <- function(uh){
+      hd <- solve_hd(hu,uh,Rx[i],H0,U0,S1,hd0[i])
+      nxt <- safe_step(H0,U0,hu,hd,uh,Rx[i]*hd)
+      nxt["U"] - U1
+    }
+    
+    tryCatch(uniroot(f,c(min_haz,5),tol=tol,maxiter=maxiter)$root,
+             error=function(e) NA_real_)
+  }
+  
+  # --- FAST feasible check ---
+  feasible <- function(i,hu){
+    uh <- solve_uh(i,hu)
+    is.finite(uh)
+  }
+  
+  ages_use <- which(age <= age_max & seq_len(n) < n)
+  
+  res <- lapply(ages_use, function(i){
+    
+    lo <- hu0[i] * hu_bounds_mult[1]
+    hi <- hu0[i] * hu_bounds_mult[2]
+    
+    # --- coarse bracket scan ---
+    grid <- seq(lo, hi, length.out = n_bracket)
+    ok <- sapply(grid, function(h) feasible(i,h))
+    
+    if (!any(ok)) {
+      return(data.frame(
+        age = age[i],
+        hu_min_feasible = NA,
+        hu_max_feasible = NA
+      ))
+    }
+    
+    # first feasible index
+    j <- which(ok)[1]
+    
+    # bracket
+    lo2 <- if (j == 1) grid[1] else grid[j-1]
+    hi2 <- grid[j]
+    
+    # --- refine (bisection-style) ---
+    for (k in seq_len(n_refine)) {
+      mid <- 0.5 * (lo2 + hi2)
+      if (feasible(i, mid)) {
+        hi2 <- mid
+      } else {
+        lo2 <- mid
+      }
+    }
+    
+    data.frame(
+      age = age[i],
+      hu_min_feasible = hi2,
+      hu_max_feasible = max(grid[ok])
+    )
+  })
+  
+  dplyr::bind_rows(res)
+}
+
+
+
+correct_returns_hazards <- function(
+    pre_haz,
+    diag_info,
+    age,
+    lx,
+    prev_pt,
+    Rx,
+    age_int = 1,
+    correction_max_age = 55,
+    min_haz = 1e-12,
+    tol = 1e-14,
+    maxiter = 200,
+    eps = 0.01,
+    verbose = TRUE
+) {
+  
+  n <- length(age)
+  
+  hu_pre <- pre_haz |>
+    dplyr::filter(trans == "hu") |>
+    dplyr::arrange(age) |>
+    dplyr::pull(hazard)
+  
+  hd_pre <- pre_haz |>
+    dplyr::filter(trans == "hd") |>
+    dplyr::arrange(age) |>
+    dplyr::pull(hazard)
+  
+  uh_pre <- pre_haz |>
+    dplyr::filter(trans == "uh") |>
+    dplyr::arrange(age) |>
+    dplyr::pull(hazard)
+  
+  # full-length floor vector; outside correction ages, leave as hu_pre
+  hu_floor_full <- hu_pre
+  idx_diag <- match(diag_info$age, age)
+  idx_diag <- idx_diag[is.finite(idx_diag)]
+  hu_floor_full[idx_diag] <- diag_info$hu_min_feasible[match(age[idx_diag], diag_info$age)]
+  
+  # correction window
+  idx_corr <- which(age <= correction_max_age)
+  if (length(idx_corr) == 0) {
+    return(pre_haz)
+  }
+  
+  i_left <- min(idx_corr)
+  i_right <- max(idx_corr)
+  
+  hu_left  <- hu_floor_full[i_left] * (1 + eps)
+  hu_right <- hu_pre[i_right]
+  
+  hu_new <- hu_pre
+  
+  if (length(idx_corr) == 1) {
+    hu_new[idx_corr] <- hu_left
+  } else {
+    x <- age[idx_corr]
+    log_left <- log(hu_left)
+    log_right <- log(hu_right)
+    log_bridge <- log_left + (log_right - log_left) *
+      (x - x[1]) / (x[length(x)] - x[1])
+    hu_new[idx_corr] <- exp(log_bridge)
+  }
+  
+  # enforce feasibility ONLY on correction ages
+  hu_new[idx_corr] <- pmax(
+    hu_new[idx_corr],
+    hu_floor_full[idx_corr] * (1 + 1e-8)
+  )
+  hu_new <- pmax(hu_new, min_haz)
+  
+  states <- build_states_targets(age, lx, prev_pt)
+  
+  safe_step <- function(H0, U0, hu, hd, uh, ud) {
+    vals <- c(H0, U0, hu, hd, uh, ud)
+    if (any(!is.finite(vals)) || any(vals[c(3,4,5,6)] < 0)) {
+      return(c(H = NA_real_, U = NA_real_))
+    }
+    Q <- tryCatch(make_Q_returns(hu, hd, uh, ud), error = function(e) NULL)
+    if (is.null(Q)) return(c(H = NA_real_, U = NA_real_))
+    P <- tryCatch(expm::expm(Q * age_int), error = function(e) NULL)
+    if (is.null(P) || any(!is.finite(P))) return(c(H = NA_real_, U = NA_real_))
+    v <- as.numeric(c(H0, U0, 0) %*% P)
+    c(H = v[1], U = v[2])
+  }
+  
+  solve_hd <- function(hu, uh, Rx_i, H0, U0, S1, seed) {
+    seed <- if (is.finite(seed) && seed > 0) seed else min_haz
+    
+    f <- function(hd) {
+      if (!is.finite(hd) || hd <= 0) return(NA_real_)
+      ud <- Rx_i * hd
+      nxt <- safe_step(H0, U0, hu, hd, uh, ud)
+      if (any(!is.finite(nxt))) return(NA_real_)
+      (nxt["H"] + nxt["U"]) - S1
+    }
+    
+    lo <- max(min_haz, seed / 20)
+    hi <- max(10 * seed, 1)
+    
+    f_lo <- f(lo)
+    f_hi <- f(hi)
+    
+    k <- 0L
+    while (is.finite(f_lo) && is.finite(f_hi) && f_lo * f_hi > 0 && k < 40L) {
+      hi <- hi * 2
+      f_hi <- f(hi)
+      k <- k + 1L
+    }
+    
+    if (!is.finite(f_lo) || !is.finite(f_hi) || f_lo * f_hi > 0) {
+      return(NA_real_)
+    }
+    
+    tryCatch(
+      uniroot(f, c(lo, hi), tol = tol, maxiter = maxiter)$root,
+      error = function(e) NA_real_
+    )
+  }
+  
+  solve_exact <- function(i, hd_seed, uh_seed) {
+    H0 <- states$lH[i]
+    U0 <- states$lU[i]
+    S1 <- sum(states$nextHU[i, ])
+    U1 <- states$nextHU[i, 2]
+    
+    hd_seed <- if (is.finite(hd_seed) && hd_seed > 0) hd_seed else hd_pre[i]
+    uh_seed <- if (is.finite(uh_seed) && uh_seed > 0) uh_seed else uh_pre[i]
+    if (!is.finite(uh_seed) || uh_seed <= 0) uh_seed <- min_haz
+    
+    f <- function(uh_val) {
+      if (!is.finite(uh_val) || uh_val <= 0) return(NA_real_)
+      hd_val <- solve_hd(hu_new[i], uh_val, Rx[i], H0, U0, S1, hd_seed)
+      if (!is.finite(hd_val)) return(NA_real_)
+      nxt <- safe_step(H0, U0, hu_new[i], hd_val, uh_val, Rx[i] * hd_val)
+      if (any(!is.finite(nxt))) return(NA_real_)
+      nxt["U"] - U1
+    }
+    
+    lo <- max(min_haz, uh_seed / 50)
+    hi <- max(50 * uh_seed, 1)
+    
+    f_lo <- f(lo)
+    f_hi <- f(hi)
+    
+    k <- 0L
+    while (is.finite(f_lo) && is.finite(f_hi) && f_lo * f_hi > 0 && k < 40L) {
+      hi <- hi * 2
+      f_hi <- f(hi)
+      k <- k + 1L
+    }
+    
+    if (!is.finite(f_lo) || !is.finite(f_hi) || f_lo * f_hi > 0) {
+      return(list(ok = FALSE))
+    }
+    
+    uh_val <- tryCatch(
+      uniroot(f, c(lo, hi), tol = tol, maxiter = maxiter)$root,
+      error = function(e) NA_real_
+    )
+    if (!is.finite(uh_val)) return(list(ok = FALSE))
+    
+    hd_val <- solve_hd(hu_new[i], uh_val, Rx[i], H0, U0, S1, hd_seed)
+    if (!is.finite(hd_val)) return(list(ok = FALSE))
+    
+    list(ok = TRUE, hd = hd_val, uh = uh_val)
+  }
+  
+  hd <- uh <- ud <- rep(NA_real_, n)
+  
+  anchor <- which.min(abs(age - 70))
+  anchor <- max(1, min(anchor, n - 1))
+  
+  sol <- solve_exact(anchor, hd_pre[anchor], uh_pre[anchor])
+  if (!sol$ok) stop("Anchor solve failed in correction.")
+  
+  hd[anchor] <- sol$hd
+  uh[anchor] <- sol$uh
+  ud[anchor] <- Rx[anchor] * hd[anchor]
+  
+  for (i in seq.int(anchor + 1, n - 1)) {
+    sol <- solve_exact(i, hd[i - 1], uh[i - 1])
+    if (!sol$ok) stop(sprintf("Forward solve failed at age %s", age[i]))
+    hd[i] <- sol$hd
+    uh[i] <- sol$uh
+    ud[i] <- Rx[i] * hd[i]
+  }
+  
+  for (i in seq.int(anchor - 1, 1, by = -1)) {
+    sol <- solve_exact(i, hd[i + 1], uh[i + 1])
+    if (!sol$ok) stop(sprintf("Backward solve failed at age %s", age[i]))
+    hd[i] <- sol$hd
+    uh[i] <- sol$uh
+    ud[i] <- Rx[i] * hd[i]
+  }
+  
+  extrap <- function(x) {
+    if (n >= 3 && all(is.finite(x[(n - 2):(n - 1)])) && all(x[(n - 2):(n - 1)] > 0)) {
+      exp(2 * log(x[n - 1]) - log(x[n - 2]))
+    } else {
+      x[n - 1]
+    }
+  }
+  
+  hd[n] <- extrap(hd)
+  uh[n] <- extrap(uh)
+  ud[n] <- Rx[n] * hd[n]
+  
+  dplyr::bind_rows(
+    tibble::tibble(age = age, trans = "hu", hazard = hu_new),
+    tibble::tibble(age = age, trans = "hd", hazard = hd),
+    tibble::tibble(age = age, trans = "ud", hazard = ud),
+    tibble::tibble(age = age, trans = "uh", hazard = uh)
   )
 }
 
 
-# derive_returns_hazards_from_Rx_curve <- function(
-#     age,
-#     lx,
-#     prev,
-#     Rx,
-#     age_int = 1,
-#     bounds = c(1e-12, 2),
-#     hu_bounds = NULL,
-#     uh_bounds = NULL,
-#     maxit = 500,
-#     reltol = 1e-14,
-#     hu_0,
-#     uh_0,
-#     smooth_w = 0.5,
-#     curvature_w = 0.5,
-#     bound_w  = 1e-3,
-#     turnover_K = 1.2,
-#     turnover_w = 1e4,
-#     fit_w = 1e6,
-#     solver = c("project"),
-#     snap_tol = 1e-20,
-#     verbose = FALSE,
-#     eps_log = 1e-2,
-#     tiny = 1e-14,
-#     line_tol = 1e-12,
-#     final_refine = TRUE,
-#     refine_tol = 1e-16,
-#     refine_dist_w = 1e-6,
-#     extrap_last_age = TRUE,
-#     # curve snap controls
-#     curve_tol = 1e-10,
-#     curve_pad_mult = 0.25,
-#     curve_pad_abs = 1e-6,
-#     curve_loss_w = 1,
-#     fallback_to_line = TRUE
-# ){
-#   
-#   solver <- match.arg(solver)
-#   
-#   n <- length(age)
-#   stopifnot(length(lx) == n, length(prev) == n, length(Rx) == n,
-#             length(hu_0) == n, length(uh_0) == n)
-#   
-#   hz_nr <- derive_noreturns_hazards(
-#     age = age,
-#     lx = lx,
-#     prev = prev,
-#     Rx = Rx,
-#     age_int = age_int,
-#     verbose = FALSE
-#   )
-#   
-#   hd <- hz_nr[hz_nr$trans == "hd", "hazard", drop = TRUE]
-#   ud <- hz_nr[hz_nr$trans == "ud", "hazard", drop = TRUE]
-#   hu_nr <- hz_nr[hz_nr$trans == "hu", "hazard", drop = TRUE]
-#   
-#   if (is.null(hu_bounds)) hu_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
-#   if (is.null(uh_bounds)) uh_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
-#   
-#   hu_lo <- pmax(hu_bounds[, 1], hu_nr)
-#   hu_hi <- hu_bounds[, 2]
-#   uh_lo <- pmax(0, uh_bounds[, 1])
-#   uh_hi <- uh_bounds[, 2]
-#   
-#   states <- build_states_targets(age, lx, prev)
-#   
-#   hu_out <- numeric(n)
-#   uh_out <- numeric(n)
-#   p2_loss <- rep(NA_real_, n)
-#   degenerate <- rep(FALSE, n)
-#   final_loss <- rep(NA_real_, n)
-#   method <- rep(NA_character_, n)
-#   hu_proj_out <- rep(NA_real_, n)
-#   bracket_lo <- rep(NA_real_, n)
-#   bracket_hi <- rep(NA_real_, n)
-#   
-#   for (i in seq_len(n)) {
-#     
-#     cap <- turnover_K * (hu_0[i] + uh_0[i])
-#     
-#     p1 <- c(clamp(hu_nr[i], hu_lo[i], hu_hi[i]), 0)
-#     p1[2] <- clamp(p1[2], uh_lo[i], uh_hi[i])
-#     
-#     p0 <- c(clamp(hu_0[i], hu_lo[i], hu_hi[i]), clamp(uh_0[i], uh_lo[i], uh_hi[i]))
-#     
-#     hu2_try <- clamp(p1[1] * exp(eps_log), hu_lo[i], hu_hi[i])
-#     uh_hi_eff <- min(uh_hi[i], cap - hu2_try)
-#     if (!is.finite(uh_hi_eff)) uh_hi_eff <- uh_hi[i]
-#     uh_hi_eff <- max(uh_hi_eff, uh_lo[i])
-#     
-#     sol2 <- solve_uh_given_hu(
-#       i, states, hd, ud,
-#       hu = hu2_try,
-#       uh_lo = uh_lo[i], uh_hi = uh_hi_eff,
-#       age_int = age_int, tiny = tiny
-#     )
-#     
-#     have_p2 <- is.finite(sol2$loss) && is.finite(sol2$uh) &&
-#       (abs(hu2_try - p1[1]) > 0) && (sol2$loss <= line_tol)
-#     
-#     if (!have_p2) {
-#       uh_seed <- clamp(max(uh_lo[i], tiny) * exp(eps_log), uh_lo[i], uh_hi[i])
-#       hu_hi_eff <- min(hu_hi[i], cap - uh_seed)
-#       if (!is.finite(hu_hi_eff)) hu_hi_eff <- hu_hi[i]
-#       hu_hi_eff <- max(hu_hi_eff, hu_lo[i])
-#       
-#       sol2b <- solve_hu_given_uh(
-#         i, states, hd, ud,
-#         uh = uh_seed,
-#         hu_lo = hu_lo[i], hu_hi = hu_hi_eff,
-#         age_int = age_int
-#       )
-#       
-#       have_p2 <- is.finite(sol2b$loss) && is.finite(sol2b$hu) &&
-#         (abs(uh_seed - p1[2]) > 0) && (sol2b$loss <= line_tol)
-#       
-#       if (have_p2) {
-#         p2 <- c(sol2b$hu, uh_seed)
-#         p2_loss[i] <- sol2b$loss
-#       } else {
-#         if (is.finite(sol2$loss) && is.finite(sol2$uh) && abs(hu2_try - p1[1]) > 0) {
-#           p2 <- c(hu2_try, sol2$uh)
-#           p2_loss[i] <- sol2$loss
-#           have_p2 <- TRUE
-#         } else if (is.finite(sol2b$loss) && is.finite(sol2b$hu) && abs(uh_seed - p1[2]) > 0) {
-#           p2 <- c(sol2b$hu, uh_seed)
-#           p2_loss[i] <- sol2b$loss
-#           have_p2 <- TRUE
-#         } else {
-#           p2 <- p1
-#           have_p2 <- FALSE
-#         }
-#       }
-#     } else {
-#       p2 <- c(hu2_try, sol2$uh)
-#       p2_loss[i] <- sol2$loss
-#     }
-#     
-#     out_i <- .curve_snap_one_age(
-#       i = i,
-#       p0 = p0,
-#       p1 = p1,
-#       p2 = p2,
-#       states = states,
-#       hd = hd,
-#       ud = ud,
-#       hu_lo = hu_lo[i],
-#       hu_hi = hu_hi[i],
-#       uh_lo = uh_lo[i],
-#       uh_hi = uh_hi[i],
-#       cap = cap,
-#       age_int = age_int,
-#       tiny = tiny,
-#       curve_tol = curve_tol,
-#       curve_pad_mult = curve_pad_mult,
-#       curve_pad_abs = curve_pad_abs,
-#       curve_loss_w = curve_loss_w,
-#       fallback_to_line = fallback_to_line
-#     )
-#     
-#     hu_out[i] <- out_i$hu
-#     uh_out[i] <- out_i$uh
-#     final_loss[i] <- out_i$loss
-#     method[i] <- out_i$method
-#     hu_proj_out[i] <- if (!is.null(out_i$hu_proj)) out_i$hu_proj else NA_real_
-#     bracket_lo[i] <- if (!is.null(out_i$bracket_lo)) out_i$bracket_lo else NA_real_
-#     bracket_hi[i] <- if (!is.null(out_i$bracket_hi)) out_i$bracket_hi else NA_real_
-#     
-#     degenerate[i] <- isTRUE(all.equal(p1, p2, tolerance = 1e-15))
-#     
-#     if (verbose && (i %% 10 == 0 || i == 1 || i == n)) {
-#       message(sprintf(
-#         "age %s: curve_loss=%.3e  p2_loss=%s  method=%s",
-#         age[i], final_loss[i], format(p2_loss[i], scientific = TRUE, digits = 2), method[i]
-#       ))
-#     }
-#   }
-#   
-#   if (isTRUE(extrap_last_age) && n >= 3) {
-#     min_haz <- bounds[1]
-#     extrap_last <- function(x) {
-#       if (is.finite(x[n - 1]) && is.finite(x[n - 2]) && x[n - 1] > 0 && x[n - 2] > 0) {
-#         exp(2 * log(x[n - 1]) - log(x[n - 2]))
-#       } else if (is.finite(x[n - 1])) {
-#         x[n - 1]
-#       } else {
-#         min_haz
-#       }
-#     }
-#     
-#     hu_out[n] <- clamp(pmax(extrap_last(hu_out), min_haz), hu_lo[n], hu_hi[n])
-#     uh_out[n] <- clamp(pmax(extrap_last(uh_out), min_haz), uh_lo[n], uh_hi[n])
-#     
-#     cap_n <- turnover_K * (hu_0[n] + uh_0[n])
-#     if (is.finite(cap_n) && (hu_out[n] + uh_out[n] > cap_n)) {
-#       uh_out[n] <- max(uh_lo[n], cap_n - hu_out[n])
-#     }
-#   }
-#   
-#   out <- tibble::tibble(
-#     age = rep(age, times = 4),
-#     trans = rep(c("hd", "hu", "ud", "uh"), each = n),
-#     hazard = c(hd, hu_out, ud, uh_out)
-#   )
-#   
-#   attr(out, "diagnostics") <- list(
-#     p2_loss = p2_loss,
-#     degenerate = degenerate,
-#     final_loss = final_loss,
-#     method = method,
-#     hu_proj = hu_proj_out,
-#     bracket_lo = bracket_lo,
-#     bracket_hi = bracket_hi
-#   )
-#   
-#   out
-# }
-
-# derive_returns_hazards_from_Rx_sr_local_tight.R
-#
-# Drop-in redux of derive_returns_hazards_from_Rx() for the decomp_sullivan
-# simulation workflow.
-#
-# Assumes simulation_functions.R has already been sourced, so the following
-# existing helpers are available and are reused here rather than redefined:
-#   - derive_noreturns_hazards()
-#   - build_states_targets()
-#   - solve_uh_given_hu()
-#   - solve_hu_given_uh()
-#   - loss_one_age()
-#   - project_point_to_line()
-#   - clamp_t_feasible()
-#   - clamp()
-#
-# Main change versus the earlier sr_local_tight version:
-#   the local s/r objective is written explicitly in terms of the exact
-#   next-age lH/lU target rather than calling loss_one_age().
-#   This is mathematically equivalent to loss_one_age() in
-#   simulation_functions.R and is included only to make the target explicit.
-
-.sr_to_haz <- function(par) {
-  s <- par[1]
-  r <- par[2]
-  T <- exp(s)
-  q <- exp(r)
-  uh <- T / (1 + q)
-  hu <- T - uh
-  c(hu = hu, uh = uh)
+derive_returns_hazards <- function(
+    age,
+    lx,
+    prev_pt,
+    Rx,
+    theta_start,
+    age_int = 1,
+    pivot_age = 75,
+    shape_width = 5,
+    anchor_age = 70,
+    correction_max_age = 55,
+    min_haz = 1e-12,
+    tol = 1e-14,
+    maxiter = 200,
+    factr = 1e6,
+    w_lx = 1,
+    w_prev = 1,
+    slope_floor = 1e-6,
+    hd_bracket = c(1e-12, 5),
+    uh_bracket = c(1e-12, 5),
+    diag_tol = 1e-12,
+    hu_bounds_mult = c(0.7, 2.0),
+    n_bracket = 21,
+    n_refine = 20,
+    eps = 0.01,
+    world_id = NULL,
+    verbose = TRUE
+) {
+  
+  age <- as.numeric(age)
+  lx <- as.numeric(lx)
+  prev_pt <- as.numeric(prev_pt)
+  n <- length(age)
+  
+  if (n < 2) stop("Need at least 2 ages.", call. = FALSE)
+  if (length(lx) != n) stop("lx must match age.", call. = FALSE)
+  if (length(prev_pt) != n) stop("prev_pt must match age.", call. = FALSE)
+  
+  if (length(Rx) == 1) Rx <- rep(as.numeric(Rx), n)
+  Rx <- as.numeric(Rx)
+  if (length(Rx) != n) stop("Rx must be length 1 or n.", call. = FALSE)
+  Rx <- pmax(Rx, min_haz)
+  
+  # ---------------------------------------------------------------------------
+  # Step 1: derive internal starts for hu / uh
+  # ---------------------------------------------------------------------------
+  hz_start <- derive_returns_hazard_starts(
+    age = age,
+    lx = lx,
+    prev_pt = prev_pt,
+    Rx = Rx,
+    theta_start = theta_start,
+    age_int = age_int,
+    pivot_age = pivot_age,
+    shape_width = shape_width,
+    min_haz = min_haz,
+    maxit = maxiter,
+    factr = factr,
+    w_lx = w_lx,
+    w_prev = w_prev,
+    slope_floor = slope_floor,
+    verbose = verbose
+  )
+  
+  hu_target <- hz_start |>
+    dplyr::filter(.data$trans == "hu") |>
+    dplyr::arrange(.data$age) |>
+    dplyr::pull(.data$hazard)
+  
+  uh_target <- hz_start |>
+    dplyr::filter(.data$trans == "uh") |>
+    dplyr::arrange(.data$age) |>
+    dplyr::pull(.data$hazard)
+  
+  if (length(hu_target) != n) stop("Internal hu_target length mismatch.", call. = FALSE)
+  if (length(uh_target) != n) stop("Internal uh_target length mismatch.", call. = FALSE)
+  
+  # ---------------------------------------------------------------------------
+  # Step 2: precorrection
+  # ---------------------------------------------------------------------------
+  pre <- derive_returns_hazards_precorrection(
+    age = age,
+    lx = lx,
+    prev_pt = prev_pt,
+    Rx = Rx,
+    hu_target = hu_target,
+    uh_target = uh_target,
+    age_int = age_int,
+    anchor_age = anchor_age,
+    min_haz = min_haz,
+    tol = tol,
+    maxiter = maxiter,
+    hd_bracket = hd_bracket,
+    uh_bracket = uh_bracket,
+    diag_tol = diag_tol,
+    world_id = world_id,
+    verbose = verbose
+  )
+  
+  # ---------------------------------------------------------------------------
+  # Step 3: diagnose early-age feasible branch
+  # ---------------------------------------------------------------------------
+  diagi <- diagnose_returns_branch(
+    age = age,
+    lx = lx,
+    prev_pt = prev_pt,
+    Rx = Rx,
+    haz = pre,
+    age_int = age_int,
+    age_max = correction_max_age,
+    hu_bounds_mult = hu_bounds_mult,
+    n_bracket = n_bracket,
+    n_refine = n_refine,
+    min_haz = min_haz,
+    tol = diag_tol,
+    maxiter = maxiter
+  )
+  
+  # ---------------------------------------------------------------------------
+  # Step 4: correct
+  # ---------------------------------------------------------------------------
+  final <- correct_returns_hazards(
+    pre_haz = pre,
+    diag_info = diagi,
+    age = age,
+    lx = lx,
+    prev_pt = prev_pt,
+    Rx = Rx,
+    age_int = age_int,
+    correction_max_age = correction_max_age,
+    min_haz = min_haz,
+    tol = tol,
+    maxiter = maxiter,
+    eps = eps,
+    verbose = verbose
+  )
+  
+  final
 }
 
-.sr_objective_local <- function(par,
-                                i, states, hd, ud,
-                                hu_lo, hu_hi,
-                                uh_lo, uh_hi,
-                                cap,
-                                age_int,
-                                par0 = NULL,
-                                anchor_w = 0,
-                                obj_scale = 1e12) {
-  hz <- .sr_to_haz(par)
-  hu <- hz["hu"]
-  uh <- hz["uh"]
-  
-  if (!is.finite(hu) || !is.finite(uh) || hu <= 0 || uh < 0) {
-    return(1e100)
-  }
-  
-  pen <- 0
-  if (hu < hu_lo) pen <- pen + (hu_lo - hu)^2
-  if (hu > hu_hi) pen <- pen + (hu - hu_hi)^2
-  if (uh < uh_lo) pen <- pen + (uh_lo - uh)^2
-  if (uh > uh_hi) pen <- pen + (uh - uh_hi)^2
-  if (is.finite(cap) && (hu + uh > cap)) pen <- pen + (hu + uh - cap)^2
-  
-  # Exact one-age target: match next-age lH and lU directly.
-  # Note: this is mathematically equivalent to loss_one_age() in
-  # simulation_functions.R; it is written out here only for clarity.
-  cur <- c(states$lH[i], states$lU[i], states$lD[i])
-  targ <- c(states$nextHU[i, 1], states$nextHU[i, 2])
-  Q <- make_Q_returns(hu = hu, hd = hd[i], uh = uh, ud = ud[i])
-  P <- expm::expm(Q * age_int)
-  nxt <- as.numeric(cur %*% P)
-  raw_obj <- sum((nxt[1:2] - targ)^2)
-  
-  if (pen > 0) {
-    raw_obj <- raw_obj + 1e12 * pen
-  }
-  
-  if (!is.null(par0) && is.finite(anchor_w) && anchor_w > 0) {
-    raw_obj <- raw_obj + anchor_w * sum((par - par0)^2)
-  }
-  
-  obj_scale * raw_obj
-}
 
-# derive_returns_hazards_from_Rx <- function(
-#     age,
-#     lx,
-#     prev,
-#     Rx,
-#     age_int = 1,
-#     bounds = c(1e-12, 2),
-#     hu_bounds = NULL,
-#     uh_bounds = NULL,
-#     maxit = 500,
-#     reltol = 1e-14,
-#     hu_0,
-#     uh_0,
-#     smooth_w = 0.5,
-#     curvature_w = 0.5,
-#     bound_w  = 1e-3,
-#     turnover_K = 1.2,
-#     turnover_w = 1e4,
-#     fit_w = 1e6,
-#     solver = c("project"),
-#     snap_tol = 1e-20,
-#     verbose = FALSE,
-#     eps_log = 1e-2,
-#     tiny = 1e-14,
-#     line_tol = 1e-12,
-#     final_refine = TRUE,
-#     refine_tol = 1e-16,
-#     refine_dist_w = 1e-6,
-#     extrap_last_age = TRUE,
-#     # local s/r refinement controls
-#     sr_refine = TRUE,
-#     sr_skip_last_age = TRUE,
-#     sr_improve_tol = 0,
-#     sr_s_window = log(1.25),
-#     sr_r_window = log(1.5),
-#     sr_anchor_w = 0,
-#     sr_maxit = 200,
-#     sr_factr = 1,
-#     sr_pgtol = 0,
-#     sr_obj_scale = 1e12
-# ){
-#   solver <- match.arg(solver)
-#   
-#   age  <- unname(as.numeric(age))
-#   lx   <- unname(as.numeric(lx))
-#   prev <- unname(as.numeric(prev))
-#   Rx   <- unname(as.numeric(Rx))
-#   hu_0 <- unname(as.numeric(hu_0))
-#   uh_0 <- unname(as.numeric(uh_0))
-#   
-#   n <- length(age)
-#   stopifnot(length(lx) == n, length(prev) == n, length(Rx) == n,
-#             length(hu_0) == n, length(uh_0) == n)
-#   
-#   hz_nr <- derive_noreturns_hazards(
-#     age = age,
-#     lx = lx,
-#     prev = prev,
-#     Rx = Rx,
-#     age_int = age_int,
-#     verbose = FALSE
-#   )
-#   
-#   hd <- hz_nr[hz_nr$trans == "hd", "hazard", drop = TRUE]
-#   ud <- hz_nr[hz_nr$trans == "ud", "hazard", drop = TRUE]
-#   hu_nr <- hz_nr[hz_nr$trans == "hu", "hazard", drop = TRUE]
-#   
-#   if (is.null(hu_bounds)) hu_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
-#   if (is.null(uh_bounds)) uh_bounds <- cbind(rep(bounds[1], n), rep(bounds[2], n))
-#   
-#   hu_lo <- pmax(hu_bounds[,1], hu_nr)
-#   hu_hi <- hu_bounds[,2]
-#   uh_lo <- pmax(0, uh_bounds[,1])
-#   uh_hi <- uh_bounds[,2]
-#   
-#   states <- build_states_targets(age, lx, prev)
-#   
-#   hu_out <- numeric(n)
-#   uh_out <- numeric(n)
-#   p2_loss <- rep(NA_real_, n)
-#   degenerate <- rep(FALSE, n)
-#   pre_sr_loss <- rep(NA_real_, n)
-#   post_sr_loss <- rep(NA_real_, n)
-#   accepted_sr <- rep(FALSE, n)
-#   sr_counts <- rep(NA_integer_, n)
-#   sr_convergence <- rep(NA_integer_, n)
-#   sr_message <- rep(NA_character_, n)
-#   sr_hu <- rep(NA_real_, n)
-#   sr_uh <- rep(NA_real_, n)
-#   
-#   for (i in seq_len(n)) {
-#     cap <- turnover_K * (hu_0[i] + uh_0[i])
-#     
-#     p1 <- c(clamp(hu_nr[i], hu_lo[i], hu_hi[i]), 0)
-#     p1[2] <- clamp(p1[2], uh_lo[i], uh_hi[i])
-#     
-#     p0 <- c(clamp(hu_0[i], hu_lo[i], hu_hi[i]), clamp(uh_0[i], uh_lo[i], uh_hi[i]))
-#     
-#     hu2_try <- clamp(p1[1] * exp(eps_log), hu_lo[i], hu_hi[i])
-#     uh_hi_eff <- min(uh_hi[i], cap - hu2_try)
-#     if (!is.finite(uh_hi_eff)) uh_hi_eff <- uh_hi[i]
-#     uh_hi_eff <- max(uh_hi_eff, uh_lo[i])
-#     
-#     sol2 <- solve_uh_given_hu(
-#       i, states, hd, ud,
-#       hu = hu2_try,
-#       uh_lo = uh_lo[i], uh_hi = uh_hi_eff,
-#       age_int = age_int, tiny = tiny
-#     )
-#     
-#     have_p2 <- is.finite(sol2$loss) && is.finite(sol2$uh) &&
-#       (abs(hu2_try - p1[1]) > 0) && (sol2$loss <= line_tol)
-#     
-#     if (!have_p2) {
-#       uh_seed <- clamp(max(uh_lo[i], tiny) * exp(eps_log), uh_lo[i], uh_hi[i])
-#       hu_hi_eff <- min(hu_hi[i], cap - uh_seed)
-#       if (!is.finite(hu_hi_eff)) hu_hi_eff <- hu_hi[i]
-#       hu_hi_eff <- max(hu_hi_eff, hu_lo[i])
-#       
-#       sol2b <- solve_hu_given_uh(
-#         i, states, hd, ud,
-#         uh = uh_seed,
-#         hu_lo = hu_lo[i], hu_hi = hu_hi_eff,
-#         age_int = age_int
-#       )
-#       
-#       have_p2 <- is.finite(sol2b$loss) && is.finite(sol2b$hu) &&
-#         (abs(uh_seed - p1[2]) > 0) && (sol2b$loss <= line_tol)
-#       
-#       if (have_p2) {
-#         p2 <- c(sol2b$hu, uh_seed)
-#         p2_loss[i] <- sol2b$loss
-#       } else {
-#         if (is.finite(sol2$loss) && is.finite(sol2$uh) && abs(hu2_try - p1[1]) > 0) {
-#           p2 <- c(hu2_try, sol2$uh)
-#           p2_loss[i] <- sol2$loss
-#           have_p2 <- TRUE
-#         } else if (is.finite(sol2b$loss) && is.finite(sol2b$hu) && abs(uh_seed - p1[2]) > 0) {
-#           p2 <- c(sol2b$hu, uh_seed)
-#           p2_loss[i] <- sol2b$loss
-#           have_p2 <- TRUE
-#         } else {
-#           p2 <- p1
-#           have_p2 <- FALSE
-#         }
-#       }
-#     } else {
-#       p2 <- c(hu2_try, sol2$uh)
-#       p2_loss[i] <- sol2$loss
-#     }
-#     
-#     v <- p2 - p1
-#     if (sum(v*v) < 1e-30) {
-#       degenerate[i] <- TRUE
-#       hu_hat <- p1[1]
-#       uh_hat <- p1[2]
-#     } else {
-#       feas <- clamp_t_feasible(
-#         a = p1, v = v,
-#         hu_lo = hu_lo[i], hu_hi = hu_hi[i],
-#         uh_lo = uh_lo[i], uh_hi = uh_hi[i],
-#         cap = cap
-#       )
-#       
-#       if (!isTRUE(feas$ok)) {
-#         hu_hat <- p1[1]
-#         uh_hat <- p1[2]
-#       } else {
-#         pr <- project_point_to_line(p0, p1, v)
-#         t_proj <- clamp(pr$t, feas$t_lo, feas$t_hi)
-#         
-#         if (isTRUE(final_refine)) {
-#           f_t <- function(t) {
-#             pt <- p1 + t * v
-#             ls <- loss_one_age(i, states, hd, ud, hu = pt[1], uh = pt[2], age_int = age_int)
-#             ls + refine_dist_w * (t - t_proj)^2
-#           }
-#           opt_t <- optimize(f_t, interval = c(feas$t_lo, feas$t_hi), tol = refine_tol)
-#           t_star <- opt_t$minimum
-#         } else {
-#           t_star <- t_proj
-#         }
-#         
-#         p_star <- p1 + t_star * v
-#         hu_hat <- p_star[1]
-#         uh_hat <- p_star[2]
-#       }
-#     }
-#     
-#     pre_sr_loss[i] <- loss_one_age(i, states, hd, ud, hu = hu_hat, uh = uh_hat, age_int = age_int)
-#     
-#     do_sr <- isTRUE(sr_refine) && !(isTRUE(sr_skip_last_age) && i == n) &&
-#       is.finite(hu_hat) && is.finite(uh_hat) && hu_hat > 0 && uh_hat > 0
-#     
-#     if (do_sr) {
-#       s0 <- log(hu_hat + uh_hat)
-#       r0 <- log(hu_hat / uh_hat)
-#       par0 <- c(s0, r0)
-#       
-#       lower <- c(s0 - sr_s_window, r0 - sr_r_window)
-#       upper <- c(s0 + sr_s_window, r0 + sr_r_window)
-#       
-#       obj_sr <- function(par) {
-#         .sr_objective_local(
-#           par = par,
-#           i = i, states = states, hd = hd, ud = ud,
-#           hu_lo = hu_lo[i], hu_hi = hu_hi[i],
-#           uh_lo = uh_lo[i], uh_hi = uh_hi[i],
-#           cap = cap,
-#           age_int = age_int,
-#           par0 = par0,
-#           anchor_w = sr_anchor_w,
-#           obj_scale = sr_obj_scale
-#         )
-#       }
-#       
-#       opt_sr <- optim(
-#         par = par0,
-#         fn = obj_sr,
-#         method = "L-BFGS-B",
-#         lower = lower,
-#         upper = upper,
-#         control = list(
-#           maxit = sr_maxit,
-#           factr = sr_factr,
-#           pgtol = sr_pgtol,
-#           trace = 0,
-#           REPORT = 10
-#         )
-#       )
-#       
-#       sr_counts[i] <- opt_sr$counts[[1]]
-#       sr_convergence[i] <- opt_sr$convergence
-#       if (!is.null(opt_sr$message)) sr_message[i] <- as.character(opt_sr$message)[1]
-#       
-#       hz_sr <- .sr_to_haz(opt_sr$par)
-#       hu_try <- as.numeric(hz_sr["hu"])
-#       uh_try <- as.numeric(hz_sr["uh"])
-#       loss_try <- loss_one_age(i, states, hd, ud, hu = hu_try, uh = uh_try, age_int = age_int)
-#       
-#       sr_hu[i] <- hu_try
-#       sr_uh[i] <- uh_try
-#       post_sr_loss[i] <- loss_try
-#       
-#       if (is.finite(loss_try) && (loss_try + sr_improve_tol < pre_sr_loss[i])) {
-#         hu_hat <- hu_try
-#         uh_hat <- uh_try
-#         accepted_sr[i] <- TRUE
-#       }
-#     } else {
-#       post_sr_loss[i] <- pre_sr_loss[i]
-#     }
-#     
-#     hu_out[i] <- hu_hat
-#     uh_out[i] <- uh_hat
-#     
-#     if (verbose && (i %% 10 == 0 || i == 1 || i == n)) {
-#       ls <- loss_one_age(i, states, hd, ud, hu = hu_out[i], uh = uh_out[i], age_int = age_int)
-#       message(sprintf(
-#         "age %s: loss=%.3e  pre_sr=%.3e  post_sr=%s  p2_loss=%s  acc=%s  deg=%s",
-#         age[i], ls, pre_sr_loss[i],
-#         format(post_sr_loss[i], scientific = TRUE, digits = 2),
-#         format(p2_loss[i], scientific = TRUE, digits = 2),
-#         accepted_sr[i], degenerate[i]
-#       ))
-#     }
-#   }
-#   
-#   if (isTRUE(extrap_last_age) && n >= 3) {
-#     min_haz <- bounds[1]
-#     extrap_last <- function(x) {
-#       if (is.finite(x[n-1]) && is.finite(x[n-2]) && x[n-1] > 0 && x[n-2] > 0) {
-#         exp(2 * log(x[n-1]) - log(x[n-2]))
-#       } else if (is.finite(x[n-1])) {
-#         x[n-1]
-#       } else {
-#         min_haz
-#       }
-#     }
-#     
-#     hu_out[n] <- clamp(pmax(extrap_last(hu_out), min_haz), hu_lo[n], hu_hi[n])
-#     uh_out[n] <- clamp(pmax(extrap_last(uh_out), min_haz), uh_lo[n], uh_hi[n])
-#     
-#     cap_n <- turnover_K * (hu_0[n] + uh_0[n])
-#     if (is.finite(cap_n) && (hu_out[n] + uh_out[n] > cap_n)) {
-#       uh_out[n] <- max(uh_lo[n], cap_n - hu_out[n])
-#     }
-#   }
-#   
-#   out <- tibble::tibble(
-#     age = rep(age, times = 4),
-#     trans = rep(c("hd", "hu", "ud", "uh"), each = n),
-#     hazard = c(hd, hu_out, ud, uh_out)
-#   )
-#   
-#   attr(out, "diagnostics") <- list(
-#     p2_loss = p2_loss,
-#     degenerate = degenerate,
-#     pre_sr_loss = pre_sr_loss,
-#     post_sr_loss = post_sr_loss,
-#     accepted_sr = accepted_sr,
-#     sr_counts = sr_counts,
-#     sr_convergence = sr_convergence,
-#     sr_message = sr_message,
-#     sr_hu = sr_hu,
-#     sr_uh = sr_uh
-#   )
-#   
-#   out
-# }
+haz_block_to_lt <- function(hz_block, init, age_int) {
+  P <- haz_to_probs(
+    hazard = hz_block %>% select(age, trans, hazard),
+    age = age,
+    age_int = age_int
+  )
+  
+  calculate_lt(P, init = init, age_int = age_int)
+}

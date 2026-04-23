@@ -1,31 +1,10 @@
-# simulation.R
-# Cleaned application script for multistate 'world' generation + exact snapping.
-#
-# Pipeline:
-#   1) Define ground world, compute Sullivan targets (lx, prevalence).
-#   2) Find near-null directions via SVD of Jacobian of (lx, prevalence).
-#   3) Create candidate parameter sets stepping along first two near-null directions
-#      (excludes the (0,0) step by construction).
-#   4) Single-pass polish candidates with polish_many() (no second-stage refinement).
-#   5) Extract Rx(age)=ud/hd curves from polished candidates.
-#   6) For each Rx curve, compute exact RETURNS hazards by isocline snapping of (hu0,uh0).
-#   7) For each Rx curve, compute deterministic NO-RETURNS hazards.
-#   8) Bind hazards and compute lifetables via group_modify() (no purrr::map in this step).
-#
-# You should be able to run this script after sourcing simulation_functions.R.
 
-suppressPackageStartupMessages({
-  library(dplyr)
-  library(tidyr)
-  library(ggplot2)
-})
-
-source("R/simulation_functions2.R")
+source("R/simulation_functions.R")
 
 # -----------------------------------------------------------------------------
-# USER SETTINGS (keep these minimal)
+# top-level settings
 # -----------------------------------------------------------------------------
-age_int <- 1
+age_int <- 1 #1/12
 age     <- seq(50,100,by=age_int)
 init    <- c(H = 1, U = 0)
 
@@ -34,32 +13,15 @@ haz_shape   <- "softkink"   # "loglinear", "piecewise", "softkink"
 pivot_age   <- 70
 shape_width <- 6
 
-# Candidate stepping along null directions (NOTE: (0,0) excluded automatically)
+# Candidate stepping along null directions 
 step_grid <- c(-0.3, -.1, .1, 0.3)   
-n_cores=parallel::detectCores()
-# Single-pass polishing controls
-lambda1 <- 0.3
-maxit1  <- 800
-factr1  <- 1e6
-w_lx    <- 0.5
-w_prev  <- 0.5
 
-# Screening thresholds (optional; set to Inf to keep everything)
-rmse_prev_max <- Inf
-rmse_lx_max   <- Inf
-
-# Exact snapping controls
-bounds_scalar <- c(1e-12, 2)
-turnover_K <- 1.2
-snap_tol  <- 1e-20
-line_tol  <- 1e-12
-eps_log   <- 1e-2
 
 # ---------------------------------------------------
-# 1) Ground world
+# Ground world
 # ---------------------------------------------------
 # This arbitrary parameterization creates the ground world.
-# from here onward we try to match the sullivan stats
+# from here onward we try to match the implied sullivan stats
 ground_pars_vec <- c(
   i_hu = -5.5, i_hd = -8.5, i_uh = -1.5, i_ud = -4.5,
   s_hu =  0.06, s_hd =  0.10, s_uh = -0.07, s_ud =  0.07
@@ -72,7 +34,7 @@ ground_mslt <- run_mslt(
   haz_shape = haz_shape, pivot_age = pivot_age, shape_width = shape_width
 )
 
-ground_summary <- ground_mslt |> select(age, lx, prevalence, prevalence_point)
+ground_summary <- ground_mslt |> select(age, lx, prevalence, prevalence_point, Lx)
 
 # Quick plot of targets
 ground_summary |> select(-prevalence_point) |> 
@@ -82,7 +44,7 @@ ground_summary |> select(-prevalence_point) |>
   labs(title = "Ground Sullivan targets")
 
 # ---------------------------------------
-# 2) Null directions from Jacobian
+# Null directions from Jacobian, creates world diversity
 # ---------------------------------------
 free_names <- ms_par_names(piecewise = TRUE)
 
@@ -96,10 +58,9 @@ nd <- find_null_directions(
 )
 
 V2 <- nd$directions[, 1:2, drop = FALSE]
-
-# -------------------------------------------------------
-# 3) Candidate parameter sets along V2 (exclude (0,0))
-# -------------------------------------------------------
+# ------------------------------------------------------------
+# Candidate hazards directly from cand
+# ------------------------------------------------------------
 cand <- make_candidates(
   base_pars  = ground_pars,
   free_names = free_names,
@@ -108,114 +69,112 @@ cand <- make_candidates(
   exclude_zero = TRUE
 )
 
-# ---------------------------------------------
-# 4) Single-pass polish
-# ---------------------------------------------
-theta_polished <- polish_many(
-  theta0_list = cand$theta0,
-  ground_summary = ground_summary,
-  free_polish = free_names,
-  age = age, init = init, age_int = age_int,
-  haz_shape = haz_shape, pivot_age = pivot_age, shape_width = shape_width,
-  lambda = lambda1,
-  lambda2 = NULL,            # IMPORTANT: no 2nd stage
-  lambda_kink1 = 0,
-  kink_trans1 = character(0),
-  maxit1 = maxit1,
-  factr1 = factr1,
-  w_lx = w_lx,
-  w_prev = w_prev,
-  age_weight_lx = "none",
-  age_weight_prev = "none",
-  prev_band = NULL,
-  prev_band_mult = 1,
-  n_cores = n_cores
-)
+# candidate parameter vectors
+theta_list <- cand$theta0
 
-fit_tbl <- purrr::imap_dfr(theta_polished, function(th, i){
-  score_fit(
-    th, ground_summary,
-    age = age, init = init, age_int = age_int,
-    haz_shape = haz_shape, pivot_age = pivot_age, shape_width = shape_width
-  ) |> mutate(world = i)
-})
-
-keep_idx <- fit_tbl |>
-  filter(.data$rmse_lx <= rmse_lx_max, .data$rmse_prev <= rmse_prev_max) |>
-  pull(.data$world)
-
-if(length(keep_idx) == 0){
-  warning("No polished worlds passed thresholds; keeping all.", call. = FALSE)
-  keep_idx <- seq_along(theta_polished)
-}
-
-theta_keep <- theta_polished[keep_idx]
-
-# Hazards for kept returns worlds (pass-1 polished)
-haz_ret_pass1 <- purrr::imap_dfr(theta_keep, function(th, j){
+haz_cand <- purrr::imap_dfr(theta_list, function(th, i) {
+  pars_i <- if (length(th) == 12) th else as_piecewise_pars(th)
+  
   expand_hazards(
-    pars = th, age = age, age_int = age_int,
-    haz_shape = haz_shape, pivot_age = pivot_age, shape_width = shape_width
+    pars_i,
+    age = age,
+    age_int = age_int,
+    haz_shape = haz_shape,
+    pivot_age = pivot_age,
+    shape_width = shape_width
   ) |>
-    mutate(world = keep_idx[j], system = "returns_pass1")
+    mutate(world = i, system = "cand_returns")
 })
 
-# -------------------------------
-# 5) Extract Rx = ud/hd
-# -------------------------------
-Rx_plot_df <- haz_ret_pass1 |>
-  filter(.data$trans %in% c("hd","ud")) |>
+# ------------------------------------------------------------
+# Rx curves from candidates: these determine the worlds!
+# ------------------------------------------------------------
+Rx_cand_df <- haz_cand |>
+  filter(trans %in% c("hd", "ud")) |>
   pivot_wider(names_from = trans, values_from = hazard) |>
   mutate(Rx = ud / hd) |>
-  select(age, world, Rx)
+  select(world, age, Rx)
 
-ggplot(Rx_plot_df, aes(age, Rx, color = as.factor(world))) +
+ggplot(Rx_cand_df, aes(x = age, y = Rx, color = factor(world))) +
   geom_line() +
-  labs(color = "world", y = "Rx = ud/hd", title = "Rx curves from polished candidates")
+  labs(title = "Rx curves from null-direction candidates", color = "world")
 
-# ------------------------------------------------
-# 6) Exact RETURNS hazards by isocline snapping
-# ------------------------------------------------
-source("R/patch2.R")
-haz_returns_exact <- Rx_plot_df %>%
-  group_by(.data$world) %>%
-  group_modify(~{
-    w <- unique(.y$world)
-    Rx_vec <- .x %>% arrange(age) %>% pull(Rx)
-    
-    hz0 <- haz_ret_pass1 %>%
-      filter(.data$world == w, .data$trans %in% c("hu","uh")) %>%
-      arrange(.data$trans, .data$age)
-    
-    hu0 <- hz0 %>% filter(.data$trans == "hu") %>% pull(.data$hazard)
-    uh0 <- hz0 %>% filter(.data$trans == "uh") %>% pull(.data$hazard)
-    
-    derive_returns_hazards_from_Rx(
-      age  = ground_summary$age,
-      lx   = ground_summary$lx,
-      prev = ground_summary$prevalence,
-      prevalence_point = ground_summary$prevalence_point,
-      Rx   = Rx_vec,
-      age_int = age_int,
-      bounds = bounds_scalar,
-      hu_bounds = NULL,
-      uh_bounds = NULL,
-      hu_0 = hu0,
-      uh_0 = uh0,
-      turnover_K = turnover_K,
-      snap_tol = snap_tol,
-      line_tol = line_tol,
-      eps_log = eps_log,
-      refine_tol = 1e-20,
-      verbose = FALSE) %>% 
-      mutate(system = "returns")
-  }) %>%
-  ungroup()
+# --------------------------------
+# derive returns worlds, can take long time,
+# here we use Rx, we do fancy dancing to get
+# starting values, and then we do more fancy dancing
+# to snap to precision
+# --------------------------------
 
-# ------------------------------
-# 7) No-returns hazards
-# ------------------------------
-haz_noreturns <- Rx_plot_df %>%
+n_cores <- parallel::detectCores()
+
+rx_groups <- Rx_cand_df %>%
+  group_by(world) %>%
+  group_split()
+
+rx_keys <- Rx_cand_df %>%
+  group_by(world) %>%
+  group_keys()
+
+old_plan <- future::plan()
+
+haz_returns_exact <- tryCatch({
+  
+  future::plan(future::multisession, workers = n_cores)
+  
+  furrr::future_map2_dfr(
+    .x = rx_groups,
+    .y = rx_keys$world,
+    .f = function(.x, .world) {
+      
+      Rx_vec <- .x %>%
+        arrange(age) %>%
+        pull(Rx)
+      
+      derive_returns_hazards(
+        age = ground_summary$age,
+        lx = ground_summary$lx,
+        prev_pt = ground_summary$prevalence_point,
+        Rx = Rx_vec,
+        theta_start = theta_list[[.world]],
+        age_int = age_int,
+        pivot_age = 75,
+        shape_width = 5,
+        anchor_age = 70,
+        correction_max_age = 55,
+        min_haz = 1e-12,
+        tol = 1e-20,
+        maxiter = 2000,
+        factr = 1e6,
+        w_lx = 1,
+        w_prev = 1,
+        slope_floor = 1e-6,
+        hd_bracket = c(1e-12, 5),
+        uh_bracket = c(1e-12, 5),
+        diag_tol = 1e-14,
+        hu_bounds_mult = c(0.7, 3.0),
+        n_bracket = 21,
+        n_refine = 20,
+        eps = 0.01,
+        world_id = .world,
+        verbose = TRUE
+      ) %>%
+        mutate(
+          world = .world,
+          system = "returns"
+        )
+    },
+    .options = furrr::furrr_options(seed = TRUE)
+  )
+  
+}, finally = {
+  future::plan(old_plan)
+})
+
+# ------------------------------------
+# derive noreturns worlds, also based on just Rx and the ground_summary
+# ------------------------------------
+haz_noreturns <- Rx_cand_df %>%
   group_by(.data$world) %>%
   group_modify(~{
     w <- unique(.y$world)
@@ -224,78 +183,53 @@ haz_noreturns <- Rx_plot_df %>%
     derive_noreturns_hazards(
       age  = ground_summary$age,
       lx   = ground_summary$lx,
-      prev = ground_summary$prevalence_point,
+      prev_pt = ground_summary$prevalence_point,
       Rx   = Rx_vec,
       age_int = age_int,
+      tol = 1e-20, 
+      maxiter = 100, 
+      hu_bracket = c(1e-12, 5),
+      hd_bracket = c(1e-12, 5),
       verbose = FALSE
     ) %>%
       mutate(system = "noreturns")
   }) %>%
   ungroup()
 
-haz_all <- bind_rows(haz_returns_exact, haz_noreturns)
 
-# -----------------------------------
-# 8) Lifetables from hazards 
-# -----------------------------------
-lt_all <- haz_all %>%
-  group_by(.data$world, .data$system) %>%
+# ----------------------
+# Combine and calc lifetables
+# ---------------------
+haz_all <-
+ bind_rows(haz_returns_exact, haz_noreturns)
+
+lt_all <-
+  haz_all %>%
+  group_by(system, world) %>%
   group_modify(~{
-    P <- haz_to_probs(.x %>% select(age, trans, hazard), age = age, age_int = age_int)
-    calculate_lt(P, init = init, age_int = age_int)
+    haz_block_to_lt(.x, init = init, age_int = age_int)
   }) %>%
   ungroup()
 
-
-lt_all |> 
-  filter(system == "returns") |> 
-  left_join(ground_summary |> rename(lx_ground = lx, prevalence_ground = prevalence_point), by = join_by(age)) |> 
-  mutate(prev_resid = prevalence_point - prevalence_ground,
-         lx_resid = lx - lx_ground) |> 
-  ggplot(aes(x=age,y=prev_resid,color=interaction(world))) +
-  geom_line()
-
-haz_all |> 
-  filter(system == "returns") |> 
-  pivot_wider(names_from = trans, values_from = hazard) |> 
-  mutate(lratio = log(hu/uh),
-         lturn = log(hu+uh)) |> 
-  ggplot(aes(x=age,y=lratio,color=as.factor(world),groups=world)) +
-  geom_line()
-
-
-haz_all |> 
-  filter(!(trans=="uh" & system== "noreturns")) |> 
-  ggplot(aes(x=age,y=hazard,color=as.factor(world))) +
-  geom_line()+
-  scale_y_log10()+
-  facet_grid(vars(trans),vars(system),scale="free_y")
-  
-ret <-
+# check precision
+hle <-
 lt_all |> 
   group_by(system,world) |> 
-  summarize(hle = sum(Lx * (1-prevalence)),.groups="drop") |> 
-  pivot_wider(names_from = system, values_from = hle) |> 
-  pull(returns) 
+  summarise(hle=sum(Lx*(1-prevalence_interval)),.groups="drop") |> 
+  pull(hle)
 
-print(ret,digits=8)
-sd(ret)
-data.frame(
-  age = ground_summary$age,
-  method = diag$method,
-  final_loss = diag$final_loss,
-  hu_proj = diag$hu_proj,
-  bracket_lo = diag$bracket_lo,
-  bracket_hi = diag$bracket_hi
-)
-
-if (age_in == 1){
-  readr::write_csv(haz_all, file = "data/worlds_hazards_annual.csv.gz")
-  readr::write_csv(lt_all, file = "data/worlds_mslt_annual.csv.gz")
+print(hle,digits=12)
+# ------------------------------------------------------------
+# save outputs
+# ------------------------------------------------------------
+save_systems <- c("returns","noreturns")
+if (age_int == 1){
+  readr::write_csv(haz_all |> filter(system %in% save_systems), file = "data/worlds_hazards_annual.csv.gz")
+  readr::write_csv(lt_all |> filter(system %in% save_systems), file = "data/worlds_mslt_annual.csv.gz")
 }
 if (age_int == 1/12){
-  readr::write_csv(haz_all, file = "data/worlds_hazards_monthly.csv.gz")
-  readr::write_csv(lt_all, file = "data/worlds_mslt_monthly.csv.gz")
+  readr::write_csv(haz_all |> filter(system %in% save_systems), file = "data/worlds_hazards_monthly.csv.gz")
+  readr::write_csv(lt_all |> filter(system %in% save_systems), file = "data/worlds_mslt_monthly.csv.gz")
 }
 
 
