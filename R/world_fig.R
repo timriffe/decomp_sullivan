@@ -2,8 +2,8 @@
 
 library(tidyverse)
 
-age_int <- 1 # 1/12
-system <- "returns"
+age_int <- 1/12
+system <- "noreturns"
 
 fig1_name <- paste0("figs/dec_",system,"_margins_",ifelse(age_int==1,"annual.pdf","monthly.pdf"))
 fig2_name <- paste0("figs/dec_",system,"_age_",ifelse(age_int==1,"annual.pdf","monthly.pdf"))
