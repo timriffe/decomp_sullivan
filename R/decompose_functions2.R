@@ -138,7 +138,7 @@ horiuchi_haz_cached <- function(pars1, pars2, trans, age, age_int = 1,
     
     for (i in seq_len(n)) {
       a <- age_index[i]
-      t <- trans_index[i]
+      ti <- trans_index[i]
       
       # grab current hazards for that age
       hu0 <- hw$hu[a]
@@ -152,8 +152,8 @@ horiuchi_haz_cached <- function(pars1, pars2, trans, age, age_int = 1,
       hplus  <- c(hu0, hd0, uh0, ud0)
       hminus <- c(hu0, hd0, uh0, ud0)
       
-      hplus[t]  <- hplus[t]  + bump
-      hminus[t] <- hminus[t] - bump
+      hplus[ti]  <- hplus[ti]  + bump
+      hminus[ti] <- hminus[ti] - bump
       
       # recompute only that one age block
       pplus_block <- one_age_probs(

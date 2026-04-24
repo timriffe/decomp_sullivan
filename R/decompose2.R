@@ -6,25 +6,19 @@ suppressPackageStartupMessages({
   library(DemoDecomp)
   library(progressr)
 })
-
+source("R/decompose_functions.R")
 source("R/decompose_functions2.R")
 
-test <- FALSE
 
 # globals
 N <- 20
-age_int <- 1
+age_int <- 1#1/12
 
 if (age_int == 1) {
   haz <- read_csv("data/worlds_hazards_annual.csv.gz", show_col_types = FALSE)
 }
 if (age_int == (1 / 12)) {
   haz <- read_csv("data/worlds_hazards_monthly.csv.gz", show_col_types = FALSE)
-}
-
-if (test) {
-  haz <- haz |> filter(world < 4)
-  N <- 2
 }
 
 init <- c(h = 1, u = 0)
@@ -58,7 +52,7 @@ rm(list = c("haz", "haz1", "haz2"))
 gc()
 
 # ready
-#
+old_plan <- future::plan()
 # Decomp in parallel
 plan(multisession, workers = n_cores)
 
@@ -115,7 +109,7 @@ with_progress({
     bind_rows()
 })
 
-plan(sequential)
+future::plan(old_plan)
 
 # clean up
 # save out
@@ -129,4 +123,4 @@ if (age_int == 1 / 12) {
 # end
 dec_out |>
   group_by(world1, world2, system) |>
-  summarize(cc = sum(cc))
+  summarize(cc = sum(cc)) |> pull(cc)
