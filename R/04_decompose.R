@@ -6,7 +6,7 @@ suppressPackageStartupMessages({
   library(DemoDecomp)
   library(progressr)
 })
-source("R/decompose_functions.R")
+source("R/02_decompose_functions.R")
 
 
 # globals

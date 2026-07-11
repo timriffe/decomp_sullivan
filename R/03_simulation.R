@@ -1,5 +1,5 @@
 
-source("R/simulation_functions.R")
+source("R/01_simulation_functions.R")
 
 # -----------------------------------------------------------------------------
 # top-level settings
