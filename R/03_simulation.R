@@ -56,7 +56,7 @@ nd <- find_null_directions(
   outputs = c("lx","prevalence"),
   tol = 1e-3, eps = 1e-4
 )
-
+nd$jacobian
 V2 <- nd$directions[, 1:2, drop = FALSE]
 # ------------------------------------------------------------
 # Candidate hazards directly from cand
