@@ -120,6 +120,19 @@ if (age_int == 1 / 12) {
 }
 
 # end
+dec_out <- read_csv("data/worlds_decomp_monthly.csv.gz")
 dec_out |>
   group_by(world1, world2, system) |>
   summarize(cc = sum(cc)) |> pull(cc)
+
+dec_out |> 
+  group_by(system, world1, world2, trans) |>
+  summarize(cc = sum(cc), .groups = "drop") |> 
+  filter(world1 == 1, world2 == 16)
+  
+dec_out |> 
+  group_by(system, world1, world2, trans) |>
+  summarize(cc = sum(cc), .groups = "drop") |> 
+  filter(system == "returns",
+         trans == "ud") |> 
+  arrange(cc) |> head()
